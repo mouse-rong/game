@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>쥐 키우기</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/dongle-bold.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* 동글 Bold (SIL OFL 1.1, fonts/OFL-Dongle.txt) — 한글 11,172자 전부 들어 있어 '쮝' 같은 글자도 깨지지 않아요.
+   동글은 글자가 작게 그려지는 폰트라 예전 Jua와 같은 크기 · 줄 위치가 되도록 보정해요. */
+@font-face{font-family:'JwiDongle';src:url('fonts/dongle-bold.woff2') format('woff2');font-weight:100 900;font-display:swap;
+  size-adjust:165%;ascent-override:47%;descent-override:15%;line-gap-override:0%}
 :root{
   --bg:#E3E1CD; --ink:#422F12; --card:#F6F3E4; --card2:#EFEBD6; --soft:#CFC9AE;
   --pink:#F4B6C2; --pink2:#E98AA0; --mint:#BFE3CF; --sky:#BBD8EE; --butter:#F6E3A1; --lav:#D6C6EC;
@@ -15,7 +17,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{background:var(--bg);color:var(--ink);font-family:'Jua',system-ui,sans-serif;font-size:15px;line-height:1.35;
+body{background:var(--bg);color:var(--ink);font-family:'JwiDongle',system-ui,sans-serif;font-size:15px;line-height:1.35;
   -webkit-tap-highlight-color:transparent;overflow:hidden;
   background-image:radial-gradient(rgba(66,47,18,.07) 1.5px,transparent 1.6px);background-size:18px 18px}
 button,input,select{font-family:inherit;color:inherit;font-size:inherit}
@@ -230,6 +232,17 @@ h3{font-size:16px;font-weight:400}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .actions .pbtn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 7px;font-size:14px}
 .actions .pbtn small{font-size:11px;opacity:.7;line-height:1}
+.nbadge{margin-left:auto;background:var(--pink2);color:#fff;font-size:11px;padding:1px 6px;line-height:1.4}
+#burger{position:relative}
+#burger.has-new:after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--pink2)}
+.patch-card{padding:14px 16px;margin-bottom:14px}
+.patch-card .pdate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.patch-card .pdate b{font-weight:400;font-size:18px}
+.patch-card h4{font-weight:400;font-size:15px;margin:10px 0 4px}
+.patch-card ul{margin:0 0 0 20px;font-size:14px;line-height:1.5}
+.patch-card li{margin:2px 0}
+.h3row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.h3row h3{margin:0}
 /* ---------- 일일 퀘스트 ---------- */
 .quest-bar{display:flex;align-items:center;gap:8px;padding:5px 10px;text-align:left;font-size:15px;flex:none}
 .quest-bar .qp{margin-left:auto;display:flex;align-items:center}
@@ -465,6 +478,12 @@ h3{font-size:16px;font-weight:400}
       </div>
     </section>
 
+    <!-- 패치노트 -->
+    <section class="view" id="v-patch">
+      <div class="vhead"><h2>📢 패치노트</h2><button class="pbtn sm close" data-close>✕ 닫기</button></div>
+      <div class="vbody" id="patchBody"></div>
+    </section>
+
     <!-- 프로필 -->
     <section class="view" id="v-prof">
       <div class="vhead"><h2>📒 프로필</h2><button class="pbtn sm close" data-close>✕ 닫기</button></div>
@@ -484,6 +503,36 @@ h3{font-size:16px;font-weight:400}
    데이터 정의 (기획서 기반)
 ========================================================= */
 const INK='#422F12';
+/* 패치노트 — 새 업데이트는 맨 위에 추가해요 (날짜: YYYY-MM-DD) */
+const PATCH_NOTES=[
+  {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
+    ['🆕 새 기능',[
+      '패치노트 메뉴가 생겼어요. 업데이트가 있으면 메뉴에 NEW 표시가 떠요.',
+      '계정 로그인 · 자동 저장: 아이디와 비밀번호로 들어가면 진행상황이 서버에 저장돼서 어느 기기에서든 이어서 할 수 있어요.',
+      '한 계정에 주인 + 케이지 세트를 최대 3개까지 만들고, 프로필에서 전환할 수 있어요.',
+      '주인님 정보(이름 · 성별 · 나이 · 성격 · MBTI)를 프로필에서 수정할 수 있어요. 성격을 바꾸면 말투도 바로 바뀌어요.',
+      '찍찍 살롱에서 쥐의 이름 · 애칭 · 털 색 · 성별 · 성격을 바꿀 수 있어요. 성격을 바꾸면 속마음과 찍찍 말풍선도 새 성격으로 나와요.',
+      '일일 퀘스트: 쓰다듬기 3번 · 속마음 듣기 · 모험 1회, 모두 완료하면 호박씨 1개! (모두 받기 버튼 포함)',
+      '호박씨 5개로 쥐 친구를 한 마리 더 입양할 수 있어요 (최대 2마리).',
+      '쥐들이 케이지 바닥을 자유롭게 돌아다녀요. 걷기 · 멈추기 · 오래 쉬기 · 서서 킁킁대기가 랜덤으로 나와요.',
+      '두 마리가 되면 코인사를 하거나 찰딱 붙어서 쉬어요.',
+      '새 재화 사과 조각과 상점 가구 탭: 바닥 · 벽지 · 커튼 · 쳇바퀴로 케이지를 꾸밀 수 있어요.',
+    ]],
+    ['🔧 바뀐 점',[
+      '모험 시간이 2 / 4 / 6시간으로 짧아졌어요.',
+      '모험은 한 번에 1마리만 갈 수 있고, 모험 중에는 즉시 완료 · 모험 취소 버튼이 보여요.',
+      '모험에서 찍찍 살롱 이용권 대신 사과 조각이 나와요. 모험 퀘스트 보상도 사과 조각이에요.',
+      '속마음 읽기가 하루 5번으로 늘었어요.',
+      '창문이 커지고, 쥐가 조금 작아졌어요.',
+      '쥐가 웃을 때 눈 모양이 더 귀여워졌어요.',
+    ]],
+    ['🐛 고친 점',[
+      '"쮝" 같은 글자가 다른 글꼴로 깨져 보이던 문제를 고쳤어요. 한글 전체가 들어 있는 동글 폰트로 바꿨어요.',
+      '속마음이 길면 줄이 깨지던 문제를 고쳤어요. 이제 두 줄까지 깔끔하게 보여요.',
+    ]],
+  ]},
+];
+const PATCH_SEEN_KEY='jwi-patch-seen';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -494,7 +543,7 @@ const ITEMS={
   pea:{name:'완두콩',icon:'pea',desc:'호감도 +5',use:true},
   mounjiro:{name:'마운찌로',icon:'pen',desc:'무게 -2g',use:true},
   potion:{name:'쥑닥쥑닥 물약',icon:'potion',desc:'오늘 속마음 읽기 +1회',use:true},
-  salon:{name:'찍찍 살롱 이용권',icon:'bow',desc:'털 색상·이름 변경',use:true},
+  salon:{name:'찍찍 살롱 이용권',icon:'bow',desc:'이름·애칭·털 색·성별·성격 변경',use:true},
   doll:{name:'애착 쥐의 애착 쥐',icon:'doll',desc:'쥐 옆에 미니 애착 인형 영구 배치',use:true},
 };
 const ADOPT_PRICE=5,MAX_MICE=2;
@@ -507,7 +556,7 @@ const SHOP=[
   {id:'pea',name:'완두콩',price:1,icon:'pea',desc:'쥐에게 사용 시 호감도 +5',give:['pea',1]},
   {id:'mounjiro',name:'마운찌로',price:1,icon:'pen',desc:'쥐에게 사용 시 무게 -2g',give:['mounjiro',1]},
   {id:'potion',name:'쥑닥쥑닥 물약',price:1,icon:'potion',desc:'당일 속마음 읽기 횟수 +1',give:['potion',1]},
-  {id:'salon',name:'찍찍 살롱',price:3,icon:'bow',desc:'털 색상이나 이름을 바꿀 수 있어요',give:['salon',1]},
+  {id:'salon',name:'찍찍 살롱',price:3,icon:'bow',desc:'쥐의 이름·애칭·털 색·성별·성격을 바꿀 수 있어요',give:['salon',1]},
   {id:'doll',name:'애착 쥐의 애착 쥐',price:10,icon:'doll',desc:'쥐 옆에 미니 애착 인형을 영구 배치',give:['doll',1]},
 ];
 const REGIONS=[
@@ -873,6 +922,7 @@ const ICONS={
   broccoli:{p:{g:'#9FD18B',G:'#6DB35A',f:'#D9EEC4'},d:["..kkkkk...",".kgGgGgk..","kgGgggGgk.","kggGgGggk.",".kgggggk..","..kkfkk...","...kfk....","...kfk....","..kfffk...","..kkkkk..."]},
   wheat:{p:{y:'#F2C66D',Y:'#D9A845',n:'#C9A04E'},d:["....kk....","...kyYk...","...kYyk...","..kkyYkk..","..kYyYyk..","...kyYk...","....kn....","....kn....","....kn....","....kk...."]},
   apple:{p:{r:'#E2575E',R:'#C23F47',w:'#FFC9C4',g:'#6DB35A',f:'#FFF1CC'},d:[".....k....",".....kgg..","..kkkkkkk.",".krwrrrkfk",".kwrrrrkfk",".krrrrrkfk",".krrrrRkfk","..krrRRkk.","...kkkkk..",".........."]},
+  news:{p:{y:'#F6E3A1',r:'#F4A9B8',w:'#FFFFFF'},d:["..........","......kk.k","....kkyk..","..kkyyyk.k","kkwyyyyk..","kwyyyyyk.k","kkyyyyyk..","..kkyyyk.k","...rkkyk..","...rr.kk.."]},
   quest:{p:{y:'#E6CC8F',w:'#FFF6DC',p:'#E98AA0'},d:[".kkkkkkkk.","kyyyyyyyyk",".kwwwwwwk.",".kwkkkkwk.",".kwwwwwwk.",".kwkkkwwk.",".kwwwwwpk.","kyyyyyyyyk",".kkkkkkkk.",".........."]},
   grave:{p:{s:'#C8C3B8',S:'#A9A397',g:'#A9C98F'},d:["..kkkkk...",".ksssssk..",".ksskssk..",".kskkksk..",".ksskssk..",".ksssssk..",".kSSSSSk..","kkkkkkkkk.","ggg.ggg.gg",".........."]},
 };
@@ -910,7 +960,8 @@ const invTotal=()=>Object.values(S.inv).reduce((a,b)=>a+b,0);
 const invFree=()=>S.cap-invTotal();
 function invAdd(id,n){S.inv[id]=(S.inv[id]||0)+n;if(S.inv[id]<=0)delete S.inv[id]}
 function rollDay(){if(S.reads.date!==todayKey())S.reads={date:todayKey(),used:0,bonus:0}}
-const readsMax=()=>3+S.reads.bonus;
+const READS_PER_DAY=5;
+const readsMax=()=>READS_PER_DAY+S.reads.bonus;
 const readsLeft=()=>{rollDay();return Math.max(0,readsMax()-S.reads.used)};
 const ageDays=(mm=S.mice[S.sel])=>Math.floor((Date.now()-mm.born)/864e5)+1;
 function addStat(k,v){const max=k==='aff'?999:100;S.stats[k]=clamp(Math.round((S.stats[k]+v)*10)/10,0,max)}
@@ -918,6 +969,7 @@ function addStat(k,v){const max=k==='aff'?999:100;S.stats[k]=clamp(Math.round((S
 /* =========================================================
    셋업 화면
 ========================================================= */
+const MBTI_LIST=['ISTJ','ISFJ','INFJ','INTJ','ISTP','ISFP','INFP','INTP','ESTP','ESFP','ENFP','ENTP','ESTJ','ESFJ','ENFJ','ENTJ'];
 const SU={oGender:'비공개',oPers:'다정함',mGender:'암컷',mPers:'얌전함',color:'#32312F'};
 function segButtons(el,list,key,onChange){
   el.innerHTML=list.map(v=>`<button class="pbtn sm ${SU[key]===v?'on':''}" data-v="${esc(v)}">${esc(v)}</button>`).join('');
@@ -927,7 +979,7 @@ function setupInit(){
   $('#setup').classList.remove('hidden');$('#game').classList.add('hidden');
   sizeCanvas(drawMouse($('#logoCv'),{color:MOUSE_DEFAULT,face:'happy'}),3);
   segButtons($('#oGender'),OWNER_GENDERS,'oGender');
-  const MBTI=['ISTJ','ISFJ','INFJ','INTJ','ISTP','ISFP','INFP','INTP','ESTP','ESFP','ENFP','ENTP','ESTJ','ESFJ','ENFJ','ENTJ'];
+  const MBTI=MBTI_LIST;
   const mb=()=>{$('#oMbti').innerHTML=MBTI.map(t=>`<button class="pbtn sm ${SU.mbti===t?'on':''}" data-v="${t}">${t}</button>`).join('')};
   $('#oMbti').onclick=e=>{const b=e.target.closest('button');if(!b)return;SU.mbti=SU.mbti===b.dataset.v?'':b.dataset.v;mb()};mb();
   const od=()=>$('#oPersDesc').textContent=`${OWNER_P[SU.oPers]} — 예) “${OWNER_SAY[SU.oPers].feed[0]}”`;
@@ -974,12 +1026,12 @@ function setupAnim(){clearInterval(setupTimer);setupTimer=setInterval(()=>{if($(
 /* =========================================================
    게임 시작 / 네비게이션
 ========================================================= */
-const NAV=[['home','나의 쥐','home'],['adv','모험','flag'],['shop','상점','shop'],['inv','보관함','bag'],['prof','프로필','note']];
+const NAV=[['home','나의 쥐','home'],['adv','모험','flag'],['shop','상점','shop'],['inv','보관함','bag'],['prof','프로필','note'],['patch','패치노트','news']];
 let booted=false;
 function startGame(){
   clearInterval(setupTimer);
   $('#setup').classList.add('hidden');$('#auth').classList.add('hidden');$('#game').classList.remove('hidden');
-  const navHTML=NAV.map(([id,label,ic])=>`<button class="pbtn" data-nav="${id}">${ico(ic,'lg')}${label}</button>`).join('');
+  const navHTML=NAV.map(([id,label,ic])=>`<button class="pbtn" data-nav="${id}">${ico(ic,'lg')}${label}${id==='patch'?'<span class="nbadge hidden">NEW</span>':''}</button>`).join('');
   $('#navSide').innerHTML=navHTML;
   $('#drawerPanel').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div class="logo">${ico('doll','lg')}메뉴</div><button class="pbtn sm" id="drawerClose">✕</button></div>
     <div class="owner-card pbox" id="ownerCardM"></div><nav class="nav">${navHTML}</nav><div class="acct-box pbox" style="padding:8px 10px" data-acct></div>`;
@@ -1055,6 +1107,8 @@ function renderAll(){
   if(view==='shop')renderShop();
   if(view==='inv')renderInv();
   if(view==='prof')renderProf();
+  if(view==='patch')renderPatch();
+  updatePatchBadge();
 }
 function buildActions(){
   const A=[['feed','먹이주기','bowl','butter','포만감↑'],['snack','간식 주기','cheese','pink',''],['bath','목욕','bubble','sky','청결도↑'],['play','놀아주기','ball','mint','행복↑']];
@@ -1930,24 +1984,76 @@ function openAdopt(){
   draw();
 }
 
-/* ---------- 찍찍 살롱 ---------- */
+/* ---------- 찍찍 살롱: 쥐 정보 전체 변경 (이용권 1장) ---------- */
 function openSalon(){
-  let col=S.mouse.color;
-  modal('✂ 찍찍 살롱',`<div class="preview pbox" style="height:140px;margin-bottom:10px"><canvas id="salonCv"></canvas></div>
-    <label class="f">이름</label><input class="input" id="salName" maxlength="10" value="${esc(S.mouse.name)}">
-    <label class="f">애칭</label><input class="input" id="salNick" maxlength="10" value="${esc(S.mouse.nick)}">
+  const m=S.mouse;let col=m.color;SU.slG=m.gender;SU.slP=m.personality;
+  modal(`✂ 찍찍 살롱 · ${esc(m.name)}`,`<div class="preview pbox" style="height:130px;margin-bottom:10px"><canvas id="salonCv"></canvas></div>
+    <div class="row2"><div><label class="f">이름 *</label><input class="input" id="salName" maxlength="10" value="${esc(m.name)}"></div>
+      <div><label class="f">애칭</label><input class="input" id="salNick" maxlength="10" value="${esc(m.nick)}"></div></div>
     <label class="f">털 색상</label><div class="swatches" id="salSw"></div>
-    <div class="colorrow"><input type="color" id="salColor" value="${col}"><span class="muted" style="font-size:12px">직접 고르기</span></div>
-    <p class="note" style="margin-top:8px">적용하면 이용권 1장이 사용돼요.</p>`,
+    <div class="colorrow"><input type="color" id="salColor" value="${col.toLowerCase()}"><span class="muted" style="font-size:12px">직접 고르기</span></div>
+    <label class="f">성별</label><div class="seg" id="salGender"></div>
+    <label class="f">성격 <span class="muted">(속마음 · 찍찍 말풍선이 바뀌어요)</span></label><div class="seg" id="salPers"></div><div class="pdesc" id="salPersDesc"></div>
+    <p class="note" style="margin-top:10px">적용하면 이용권 1장이 사용돼요.</p>`,
     [{label:'나중에'},{label:'적용하기',cls:'pink',fn:()=>{
       const nm=$('#salName').value.trim();if(!nm){toast('이름을 입력해 주세요!');return false}
-      S.mouse.name=nm;S.mouse.nick=$('#salNick').value.trim();S.mouse.color=col;invAdd('salon',-1);
-      afterUse('happy','heart','salon');toast('변신 완료! 반짝반짝 ✨');
+      const persChanged=m.personality!==SU.slP;
+      Object.assign(S.mouse,{name:nm,nick:$('#salNick').value.trim(),color:col,gender:SU.slG,personality:SU.slP});
+      invAdd('salon',-1);
+      afterUse('happy','heart','salon');
+      if(persChanged){   // 바뀐 성격의 말투로 바로 한마디 + 속마음
+        mouseThought('pet');S.thoughtCtx='salon';save();renderAll();
+        setTimeout(()=>{squeak(bag('sq:'+S.mouse.personality,SQ_PERS[S.mouse.personality]||SQ_BASE));squeakSound('찍찍!')},500);
+        toast(`변신 완료! 이제 ${S.mouse.personality} ${nm} ✨`);
+      }else toast('변신 완료! 반짝반짝 ✨');
     }}]);
   const draw=()=>sizeCanvas(drawMouse($('#salonCv'),{color:col,weight:S.stats.weight,face:'happy'}),6);
-  renderSwatches($('#salSw'),col,c=>{col=c;$('#salColor').value=c;draw()});
+  renderSwatches($('#salSw'),col,c=>{col=c;$('#salColor').value=c.toLowerCase();draw()});
   $('#salColor').oninput=e=>{col=e.target.value.toUpperCase();$$('#salSw .sw').forEach(s=>s.classList.remove('on'));draw()};
+  segButtons($('#salGender'),MOUSE_GENDERS,'slG');
+  const pd=()=>{const ex=MOUSE_T[SU.slP]?.pet?.[0];$('#salPersDesc').textContent=MOUSE_P[SU.slP]+(ex?` — 예) “${fill(ex)}”`:'')};
+  segButtons($('#salPers'),Object.keys(MOUSE_P),'slP',pd);pd();
   draw();
+}
+
+/* ---------- 주인님 정보 수정 ---------- */
+function openOwnerEdit(){
+  const o=S.owner;SU.eoG=o.gender||'비공개';SU.eoP=o.personality;SU.eoM=o.mbti||'';
+  modal('🙋 주인님 정보 수정',`
+    <label class="f">이름 *</label><input class="input" id="eoName" maxlength="12" value="${esc(o.name)}">
+    <div class="row2"><div><label class="f">성별</label><div class="seg" id="eoGender"></div></div>
+      <div><label class="f">나이</label><input class="input" id="eoAge" type="number" min="1" max="120" value="${o.age??''}" placeholder="예: 25"></div></div>
+    <label class="f">성격 <span class="muted">(쥐에게 건네는 말투가 바뀌어요)</span></label><div class="seg" id="eoPers"></div><div class="pdesc" id="eoPersDesc"></div>
+    <label class="f">MBTI <span class="muted">(선택 · 다시 누르면 해제)</span></label><div class="mbti" id="eoMbti"></div>`,
+    [{label:'취소'},{label:'저장',cls:'pink',fn:()=>{
+      const nm=$('#eoName').value.trim();if(!nm){toast('이름을 입력해 주세요!');return false}
+      const persChanged=o.personality!==SU.eoP;
+      Object.assign(S.owner,{name:nm,gender:SU.eoG,age:$('#eoAge').value?Number($('#eoAge').value):null,personality:SU.eoP,mbti:SU.eoM});
+      save();renderAll();
+      if(persChanged){setView('home');setTimeout(()=>ownerTalk('pet'),250);toast(`🙋 이제 ${S.owner.personality} 주인님이에요`)}
+      else toast('🙋 주인님 정보를 바꿨어요');
+    }}]);
+  segButtons($('#eoGender'),OWNER_GENDERS,'eoG');
+  const od=()=>$('#eoPersDesc').textContent=`${OWNER_P[SU.eoP]} — 예) “${fill(OWNER_SAY[SU.eoP].pet[0])}”`;
+  segButtons($('#eoPers'),Object.keys(OWNER_P),'eoP',od);od();
+  const mb=()=>{$('#eoMbti').innerHTML=MBTI_LIST.map(t=>`<button class="pbtn sm ${SU.eoM===t?'on':''}" data-v="${t}">${t}</button>`).join('')};
+  $('#eoMbti').onclick=e=>{const b=e.target.closest('button');if(!b)return;SU.eoM=SU.eoM===b.dataset.v?'':b.dataset.v;mb()};mb();
+}
+
+/* ---------- 패치노트 ---------- */
+const latestPatch=()=>PATCH_NOTES[0]?.date||'';
+function updatePatchBadge(){
+  const isNew=!!latestPatch()&&lsGet(PATCH_SEEN_KEY)!==latestPatch();
+  $$('.nbadge').forEach(b=>b.classList.toggle('hidden',!isNew));
+  $('#burger')?.classList.toggle('has-new',isNew);
+}
+function renderPatch(){
+  const fmt=d=>{const[y,m,dd]=d.split('-');return`${y}년 ${+m}월 ${+dd}일`};
+  $('#patchBody').innerHTML=PATCH_NOTES.map((p,i)=>`<div class="patch-card pbox">
+    <div class="pdate"><b>${fmt(p.date)}</b>${i===0?'<span class="chip" style="background:var(--pink)">최신</span>':''}</div>
+    ${p.title?`<div style="font-size:15px">${esc(p.title)}</div>`:''}
+    ${p.sections.map(([h,items])=>`<h4>${h}</h4><ul>${items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`).join('')}</div>`).join('');
+  if(lsGet(PATCH_SEEN_KEY)!==latestPatch())lsSet(PATCH_SEEN_KEY,latestPatch());
 }
 
 /* =========================================================
@@ -1978,11 +2084,12 @@ function renderProf(){
         <dt>무게 · 호감도</dt><dd>${r1(st.weight)}g · ♥ ${Math.round(st.aff)}</dd>
       </dl></div></div>`}).join('')+
   (S.doll?`<div class="section pbox"><h3>🧸 애착 인형</h3><dl class="kv"><dt>이름</dt><dd><span class="sw" style="display:inline-block;width:14px;height:14px;background:${dollInfo().color};vertical-align:middle"></span> ${esc(dollInfo().name)}</dd></dl></div>`:'')+
-  `<div class="section pbox"><h3>🙋 주인님</h3>
+  `<div class="section pbox"><div class="h3row"><h3>🙋 주인님</h3><button class="pbtn sm butter" data-edit-owner>✏️ 수정</button></div>
     <dl class="kv"><dt>이름</dt><dd>${esc(o.name)}</dd><dt>성별</dt><dd>${esc(o.gender)}</dd><dt>나이</dt><dd>${o.age??'-'}</dd>
     <dt>성격</dt><dd>${esc(o.personality)} <span class="muted" style="font-size:12px">— ${OWNER_P[o.personality]}</span></dd><dt>MBTI</dt><dd>${esc(o.mbti)||'-'}</dd></dl></div>`;
   S.mice.forEach((mm,i)=>sizeCanvas(drawMouse($('#profCv'+i),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy'}),5));
-  $('#profBody').onclick=e=>{const b=e.target.closest('[data-cage]');if(b){switchCage(+b.dataset.cage);return}
+  $('#profBody').onclick=e=>{if(e.target.closest('[data-edit-owner]')){openOwnerEdit();return}
+    const b=e.target.closest('[data-cage]');if(b){switchCage(+b.dataset.cage);return}
     if(e.target.closest('[data-cage-add]'))addCage()};
 }
 

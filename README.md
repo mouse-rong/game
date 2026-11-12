@@ -9,6 +9,7 @@
 | `index.html` | 게임 전체. 패치할 때는 이 파일만 바꿔서 푸시하면 돼요. |
 | `config.js` | Supabase 연결 설정(URL · 공개 키). 한 번 채워 두면 패치해도 그대로 유지돼요. |
 | `supabase/setup.sql` | Supabase에 한 번 실행하는 테이블 · 함수 설정. |
+| `fonts/dongle-bold.woff2` | 게임 글꼴(동글 Bold, 한글 11,172자 전체). 라이선스는 `fonts/OFL-Dongle.txt`(SIL OFL 1.1). |
 
 ## Supabase 연결 (처음 한 번)
 
@@ -29,5 +30,8 @@
 - 진행상황은 바뀔 때마다 브라우저에 바로 저장되고, 서버에는 2초쯤 모아서 저장돼요. 계정당 케이지(주인 + 쥐) 최대 3개.
 
 ## 패치할 때
+
+`index.html` 안의 `PATCH_NOTES` 맨 위에 날짜(`YYYY-MM-DD`)와 내용을 추가하면 게임의 **패치노트** 메뉴에 보이고, 아직 안 본 사용자에게는 메뉴에 NEW 표시가 떠요.
+
 
 `index.html`만 바꿔서 `main`에 푸시하면 GitHub Pages가 다시 배포해요. 사용자 진행상황은 Supabase에 그대로 있고, 예전 저장 데이터는 게임이 불러올 때 새 구조로 자동 변환돼요(`prepState`). 새 기능에서 저장 구조를 바꿀 때도 `prepState`에 기본값을 넣어 주면 기존 사용자 데이터가 깨지지 않아요.
