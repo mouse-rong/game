@@ -235,6 +235,13 @@ h3{font-size:16px;font-weight:400}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .actions .pbtn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 7px;font-size:14px}
 .actions .pbtn small{font-size:11px;opacity:.7;line-height:1}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pbtn.toggle{min-width:84px}
+.pbtn.toggle.on{background:var(--mint)}
+.coupon-row{display:flex;gap:6px;align-items:center}
+.coupon-row .input{flex:1;text-transform:uppercase;letter-spacing:1px}
+.coupon-row .input::placeholder{text-transform:none;letter-spacing:0}
+#v-set .acct-box{font-size:13px}
 .nbadge{margin-left:auto;background:var(--pink2);color:#fff;font-size:11px;padding:1px 6px;line-height:1.4}
 #burger{position:relative}
 #burger.has-new:after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--pink2)}
@@ -432,7 +439,6 @@ h3{font-size:16px;font-weight:400}
         <span class="chip adv-chip hidden" id="advChip" data-nav="adv" title="모험 화면 보기"></span>
         <canvas class="doll hidden" id="dollCv"></canvas>
         <span class="chip doll-tag hidden" id="dollTag"></span>
-        <button class="chip sound-btn" id="soundBtn"></button>
         <div class="bubble hidden" id="bubble"></div>
         <div class="chip fav" id="fav"></div>
         <div class="away hidden" id="away"></div>
@@ -487,6 +493,29 @@ h3{font-size:16px;font-weight:400}
       <div class="vbody" id="patchBody"></div>
     </section>
 
+    <!-- 설정 -->
+    <section class="view" id="v-set">
+      <div class="vhead"><h2>⚙️ 설정</h2><button class="pbtn sm close" data-close>✕ 닫기</button></div>
+      <div class="vbody">
+        <div class="section pbox">
+          <h3>🔈 소리</h3>
+          <div class="set-row"><div><div>찍찍 소리</div><div class="muted" style="font-size:12px">쥐를 누르거나 놀아 줄 때 나는 효과음</div></div>
+            <button class="pbtn toggle" id="setSound"></button></div>
+        </div>
+        <div class="section pbox">
+          <h3>🎟 쿠폰 입력</h3>
+          <p class="note" style="margin:-4px 0 8px">받은 쿠폰 코드를 입력하면 보상이 지금 케이지로 들어와요. 쿠폰은 계정당 한 번씩 쓸 수 있어요.</p>
+          <form class="coupon-row" id="couponForm"><input class="input" id="cpCode" maxlength="32" placeholder="쿠폰 코드" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <button type="submit" class="pbtn pink" id="cpGo">사용</button></form>
+          <div class="auth-msg" id="cpMsg"></div>
+        </div>
+        <div class="section pbox">
+          <h3>👤 계정</h3>
+          <div class="acct-box" data-acct></div>
+        </div>
+      </div>
+    </section>
+
     <!-- 프로필 -->
     <section class="view" id="v-prof">
       <div class="vhead"><h2>📒 프로필</h2><button class="pbtn sm close" data-close>✕ 닫기</button></div>
@@ -510,6 +539,8 @@ const INK='#422F12';
 const PATCH_NOTES=[
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
+      '설정 메뉴가 생겼어요. 찍찍 소리 켜기 · 끄기와 쿠폰 입력이 여기 있어요.',
+      '쿠폰: 받은 코드를 설정 > 쿠폰 입력에 넣으면 보상이 들어와요 (계정당 한 번).',
       '패치노트 메뉴가 생겼어요. 업데이트가 있으면 메뉴에 NEW 표시가 떠요.',
       '계정 로그인 · 자동 저장: 아이디와 비밀번호로 들어가면 진행상황이 서버에 저장돼서 어느 기기에서든 이어서 할 수 있어요.',
       '한 계정에 주인 + 케이지 세트를 최대 3개까지 만들고, 프로필에서 전환할 수 있어요.',
@@ -925,6 +956,7 @@ const ICONS={
   broccoli:{p:{g:'#9FD18B',G:'#6DB35A',f:'#D9EEC4'},d:["..kkkkk...",".kgGgGgk..","kgGgggGgk.","kggGgGggk.",".kgggggk..","..kkfkk...","...kfk....","...kfk....","..kfffk...","..kkkkk..."]},
   wheat:{p:{y:'#F2C66D',Y:'#D9A845',n:'#C9A04E'},d:["....kk....","...kyYk...","...kYyk...","..kkyYkk..","..kYyYyk..","...kyYk...","....kn....","....kn....","....kn....","....kk...."]},
   apple:{p:{r:'#E2575E',R:'#C23F47',w:'#FFC9C4',g:'#6DB35A',f:'#FFF1CC'},d:[".....k....",".....kgg..","..kkkkkkk.",".krwrrrkfk",".kwrrrrkfk",".krrrrrkfk",".krrrrRkfk","..krrRRkk.","...kkkkk..",".........."]},
+  gear:{p:{g:'#C9C4BC',G:'#A9A397'},d:["....kk....",".kk.kk.kk.",".kkkggkkk.","..kgGGgk..","kkgG..Ggkk","kkgG..Ggkk","..kgGGgk..",".kkkggkkk.",".kk.kk.kk.","....kk...."]},
   news:{p:{y:'#F6E3A1',r:'#F4A9B8',w:'#FFFFFF'},d:["..........","......kk.k","....kkyk..","..kkyyyk.k","kkwyyyyk..","kwyyyyyk.k","kkyyyyyk..","..kkyyyk.k","...rkkyk..","...rr.kk.."]},
   quest:{p:{y:'#E6CC8F',w:'#FFF6DC',p:'#E98AA0'},d:[".kkkkkkkk.","kyyyyyyyyk",".kwwwwwwk.",".kwkkkkwk.",".kwwwwwwk.",".kwkkkwwk.",".kwwwwwpk.","kyyyyyyyyk",".kkkkkkkk.",".........."]},
   grave:{p:{s:'#C8C3B8',S:'#A9A397',g:'#A9C98F'},d:["..kkkkk...",".ksssssk..",".ksskssk..",".kskkksk..",".ksskssk..",".ksssssk..",".kSSSSSk..","kkkkkkkkk.","ggg.ggg.gg",".........."]},
@@ -1029,7 +1061,7 @@ function setupAnim(){clearInterval(setupTimer);setupTimer=setInterval(()=>{if($(
 /* =========================================================
    게임 시작 / 네비게이션
 ========================================================= */
-const NAV=[['home','나의 쥐','home'],['adv','모험','flag'],['shop','상점','shop'],['inv','보관함','bag'],['prof','프로필','note'],['patch','패치노트','news']];
+const NAV=[['home','나의 쥐','home'],['adv','모험','flag'],['shop','상점','shop'],['inv','보관함','bag'],['prof','프로필','note'],['patch','패치노트','news'],['set','설정','gear']];
 let booted=false;
 function startGame(){
   clearInterval(setupTimer);
@@ -1058,7 +1090,6 @@ function bindOnce(){
   $('#questBtn').onclick=openQuests;
   $('#hTabs').onclick=e=>{const t=e.target.closest('[data-msel]');if(t)setSel(+t.dataset.msel);if(e.target.closest('[data-adopt]'))openAdopt()};
   $('#dollCv').addEventListener('pointerdown',e=>{e.preventDefault();pokeDoll()});
-  $('#soundBtn').onclick=()=>{S.sound=S.sound===false;save();renderStage();if(S.sound!==false)squeakSound('찍!')};
   setupStageResize();
   startLoops();
 }
@@ -1111,6 +1142,7 @@ function renderAll(){
   if(view==='inv')renderInv();
   if(view==='prof')renderProf();
   if(view==='patch')renderPatch();
+  if(view==='set')renderSettings();
   updatePatchBadge();
 }
 function buildActions(){
@@ -1178,8 +1210,7 @@ function renderStage(){
   const sc=pxScale,home=homeIdx(),allAway=!home.length;
   G.D=Math.round(6*sc);
   $('#stage').style.setProperty('--floor',Math.round(G.B+4*sc+G.D+2*sc)+'px');
-  $('#fav').classList.toggle('hidden',allAway);$('#soundBtn').classList.toggle('hidden',allAway);
-  $('#soundBtn').textContent=S.sound===false?'🔇 소리 꺼짐':'🔈 찍찍 소리';
+  $('#fav').classList.toggle('hidden',allAway);
   RT.forEach(r=>{
     const m=S.mice[r.i],away=!!m.adv;
     r.el.classList.toggle('hidden',away);
@@ -2043,8 +2074,46 @@ function openOwnerEdit(){
   $('#eoMbti').onclick=e=>{const b=e.target.closest('button');if(!b)return;SU.eoM=SU.eoM===b.dataset.v?'':b.dataset.v;mb()};mb();
 }
 
+/* ---------- 설정: 소리 · 쿠폰 ---------- */
+function renderSettings(){
+  const on=S.sound!==false,b=$('#setSound');
+  b.textContent=on?'🔈 켜짐':'🔇 꺼짐';b.classList.toggle('on',on);
+  b.onclick=()=>{S.sound=!on?true:false;save();renderSettings();if(S.sound)squeakSound('찍!')};
+  $('#couponForm').onsubmit=e=>{e.preventDefault();redeemCoupon()};
+  renderSaveState();
+}
+const CP_REASON={not_found:'없는 쿠폰 코드예요. 철자를 확인해 주세요',expired:'사용 기간이 끝난 쿠폰이에요',used:'이 계정에서 이미 사용한 쿠폰이에요',
+  sold_out:'선착순 수량이 모두 소진된 쿠폰이에요',auth:'계정 확인에 실패했어요. 다시 로그인해 주세요'};
+let cpBusy=false;
+async function redeemCoupon(){
+  const code=$('#cpCode').value.replace(/\s+/g,'').toUpperCase(),msg=t=>{$('#cpMsg').textContent=t};
+  if(!code)return msg('쿠폰 코드를 입력해 주세요');
+  if(cpBusy)return;
+  if(BACKEND!=='supa')return msg('쿠폰은 서버 저장이 연결된 상태에서만 쓸 수 있어요');
+  cpBusy=true;$('#cpGo').disabled=true;msg('');
+  let r=null;
+  try{r=await supaRpc('jwi_redeem',{p_key:ACC.key,p_h:ACC.h,p_code:code})}
+  catch(e){console.warn(e);msg(e.code==='no_function'?'쿠폰 기능이 아직 서버에 준비되지 않았어요':'서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요')}
+  cpBusy=false;$('#cpGo').disabled=false;
+  if(!r)return;
+  if(!r.ok){
+    if(r.reason==='not_started'){const d=new Date(r.starts_at);return msg(`${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}부터 쓸 수 있는 쿠폰이에요`)}
+    return msg(CP_REASON[r.reason]||'쿠폰을 사용할 수 없어요');
+  }
+  const got=[];
+  for(const[id,raw]of Object.entries(r.rewards||{})){
+    const n=Math.max(0,Math.floor(+raw||0));if(!n)continue;
+    if(id==='seed')S.seeds+=n;else if(id==='apple')S.apples+=n;else if(ITEMS[id])invAdd(id,n);else continue;
+    got.push([id,n]);
+  }
+  save();flushSave();renderAll();$('#cpCode').value='';msg('');
+  if(got.some(([id])=>id==='seed'))particles('seed',4);
+  modal('🎟 쿠폰 사용 완료!',`${r.note?`<p>${esc(r.note)}</p>`:''}<div class="reward-list">${got.map(([id,n])=>`<div class="reward pbox">${ico(gIcon(id),'lg')}${gName(id)} ×${n}</div>`).join('')||'<span class="muted">보상이 없는 쿠폰이에요</span>'}</div>
+    ${invFree()<0?'<p class="note">보관함이 가득 찼지만 쿠폰 보상은 그대로 들어왔어요.</p>':''}`,[{label:'좋아요!',cls:'pink'}]);
+}
+
 /* ---------- 패치노트 ---------- */
-const latestPatch=()=>PATCH_NOTES[0]?.date||'';
+const latestPatch=()=>{const p=PATCH_NOTES[0];return p?p.date+'#'+p.sections.reduce((n,x)=>n+x[1].length,0):''};   // 같은 날 항목이 늘어도 NEW
 function updatePatchBadge(){
   const isNew=!!latestPatch()&&lsGet(PATCH_SEEN_KEY)!==latestPatch();
   $$('.nbadge').forEach(b=>b.classList.toggle('hidden',!isNew));
