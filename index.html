@@ -565,6 +565,7 @@ const PATCH_NOTES=[
     ]],
     ['🔧 바뀐 점',[
       '메리 크리 쥑쥑 벽지가 깔끔한 베이지 바탕에 초록 트리와 눈꽃 격자 무늬로 바뀌었어요.',
+      '레드 카펫이 레트 카펫으로 이름이 바뀌고, 노란 테두리 없이 차분한 와인빛 체크 무늬가 됐어요.',
       '패치노트를 날짜 · 항목별로 접었다 펼 수 있어요.',
       '모험 시간이 2 / 4 / 6시간으로 짧아졌어요.',
       '모험은 한 번에 1마리만 갈 수 있고, 모험 중에는 즉시 완료 · 모험 취소 버튼이 보여요.',
@@ -1720,7 +1721,7 @@ const FCAT=[['floor','바닥','🟫'],['wall','벽지','🧱'],['curtain','커�
 const FURN=[
   {id:'maru',cat:'floor',name:'쥐깍 마루',price:1,desc:'단색 마루바닥 · 색상 선택 가능',color:true},
   {id:'sawdust',cat:'floor',name:'푹신 톱밥',price:3,desc:'톱밥이 부드럽게 흩어진 바닥'},
-  {id:'carpet',cat:'floor',name:'레드 카펫',price:3,desc:'푹신한 크리스마스 카펫',xmas:true},
+  {id:'carpet',cat:'floor',name:'레트 카펫',price:3,desc:'차분한 와인빛 체크 무늬의 푹신한 크리스마스 카펫',xmas:true},
   {id:'paint',cat:'wall',name:'쥐깍 페인트',price:1,desc:'단색 벽지 · 색상 선택 가능',color:true},
   {id:'modern',cat:'wall',name:'모던 쥑의 선택',price:2,desc:'위는 밝은 아이보리, 아래는 나무판자 벽'},
   {id:'merry',cat:'wall',name:'메리 크리 쥑쥑',price:3,desc:'깔끔한 베이지 바탕에 초록 트리와 눈꽃 격자 무늬',xmas:true},
@@ -1772,15 +1773,19 @@ function tileSawdust(){return tile('sawdust',24,16,P=>{
   P(0,0,'#F3E4C0',24,16);const R=rng(7),cols=['#E6CF9C','#DCC08A','#FFF6DE','#EAD7AB','#D3B47B'];
   for(let k=0;k<34;k++){const x=Math.floor(R()*24),y=Math.floor(R()*16),c=cols[Math.floor(R()*cols.length)],t=R();
     t<.45?P(x,y,c,2,1):t<.75?P(x,y,c,1,1):P(x,y,c,1,2)}})}
-function tileCarpet(){return tile('carpet',16,16,P=>{
-  P(0,0,'#C63F4A',16,16);
-  for(let y=0;y<16;y++)for(let x=0;x<16;x++){if((x*3+y*5)%7===0)P(x,y,'#D4545F');else if((x*5+y*3)%11===0)P(x,y,'#B3343F')}
-  const g='#E8B84C';P(8,5,g);P(7,6,g,3,1);P(6,7,g,5,1);P(7,8,g,3,1);P(8,9,g);P(8,7,'#FFF6DC');
-  P(0,0,'#5E9E5A');P(1,0,'#5E9E5A');P(0,1,'#5E9E5A');P(1,1,'#E0484F')})}
+function tileCarpet(){return tile('carpet3',24,24,P=>{   // 차분한 와인빛 타탄 체크 (가로 · 세로 줄을 사선으로 엮은 직물 느낌)
+  const L='#7A1C2A',D='#4A111B',M='#58141F',B='#6A1522';   // 가는 밝은 줄 · 어두운 띠 · 중간 · 밝은 칸
+  const sett=[L,D,D,D,D,B,B,B,B,B,D,B,B,B,B,B,D,D,D,D,M,M,M,M];
+  for(let y=0;y<24;y++)for(let x=0;x<24;x++){
+    let c=sett[x]===sett[y]?sett[x]:mix(sett[x],sett[y],.5);   // 같은 색끼리 겹치면 또렷한 칸, 다르면 반반 섞인 색
+    if(((x+y)&3)===0)c=shade(c,-.025);                          // 은은한 사선 직물 결
+    P(x,y,c);
+  }
+})}
 function floorCSS(id,T){
   if(id==='maru')return`background:url(${tileMaru(S.deco.color.maru)}) 0 0/${32*T}px ${8*T}px repeat`;
   if(id==='sawdust')return`background:url(${tileSawdust()}) 0 0/${24*T}px ${16*T}px repeat`;
-  if(id==='carpet')return`background:url(${tileCarpet()}) 0 0/${16*T}px ${16*T}px repeat;box-shadow:inset 0 ${T}px 0 #8E2630,inset 0 ${3*T}px 0 #E8B84C,inset 0 ${4*T}px 0 #8E2630`;
+  if(id==='carpet')return`background:url(${tileCarpet()}) 0 0/${24*T}px ${24*T}px repeat`;
   return'';
 }
 /* ---------- 벽지 ---------- */
