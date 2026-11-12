@@ -101,7 +101,7 @@ grant execute on function public.jwi_save(text, text, jsonb)  to anon, authentic
 -- =====================================================================
 -- 쿠폰 (2026-11-12 추가)
 --   jwi_coupons     : 쿠폰 코드 · 보상 · 기간 (쿠폰 추가/수정은 supabase/coupons.sql 참고)
---   jwi_coupon_uses : 어느 계정이 어떤 쿠폰을 썼는지 (한 계정당 쿠폰 1번)
+--   jwi_coupon_uses : 어느 계정의 어느 케이지가 어떤 쿠폰을 썼는지 (케이지마다 쿠폰 1번)
 --   보상 예: {"seed": 3, "apple": 2, "snack": 5, "potion": 1}
 --     seed=호박씨, apple=사과 조각, snack=간식, pea=완두콩, mounjiro=마운찌로,
 --     potion=쥑닥쥑닥 물약, salon=찍찍 살롱 이용권, doll=애착 쥐의 애착 쥐
@@ -119,16 +119,23 @@ create table if not exists public.jwi_coupons (
 create table if not exists public.jwi_coupon_uses (
   code     text not null references public.jwi_coupons(code) on delete cascade,
   key      text not null references public.jwi_accounts(key) on delete cascade,
+  cage     text not null default '',          -- 케이지 고유 번호
   used_at  timestamptz not null default now(),
-  primary key (code, key)
+  primary key (code, key, cage)
 );
+-- 예전(계정당 1번) 구조에서 케이지별 구조로 바꾸기 — 여러 번 실행해도 괜찮아요
+alter table public.jwi_coupon_uses add column if not exists cage text not null default '';
+alter table public.jwi_coupon_uses drop constraint if exists jwi_coupon_uses_pkey;
+alter table public.jwi_coupon_uses add primary key (code, key, cage);
 alter table public.jwi_coupons     enable row level security;
 alter table public.jwi_coupon_uses enable row level security;
 revoke all on public.jwi_coupons, public.jwi_coupon_uses from anon, authenticated;
 
 -- 쿠폰 사용: { ok: true, rewards, note } 또는 { ok: false, reason }
 --   reason: auth | not_found | not_started | expired | used | sold_out
-create or replace function public.jwi_redeem(p_key text, p_h text, p_code text)
+--   케이지마다 1번 (한 계정의 케이지는 최대 3개라, 한 계정에서 같은 쿠폰은 최대 3번)
+drop function if exists public.jwi_redeem(text, text, text);
+create or replace function public.jwi_redeem(p_key text, p_h text, p_code text, p_cage text)
 returns json
 language plpgsql
 security definer
@@ -154,7 +161,11 @@ begin
   if c.ends_at is not null and now() > c.ends_at then
     return json_build_object('ok', false, 'reason', 'expired', 'ends_at', c.ends_at);
   end if;
-  if exists (select 1 from jwi_coupon_uses where code = v_code and key = p_key) then
+  if p_cage is null or char_length(p_cage) not between 1 and 64 then
+    raise exception 'invalid_input';
+  end if;
+  if exists (select 1 from jwi_coupon_uses where code = v_code and key = p_key and cage = p_cage)
+     or (select count(*) from jwi_coupon_uses where code = v_code and key = p_key) >= 3 then
     return json_build_object('ok', false, 'reason', 'used');
   end if;
   if c.max_uses is not null then
@@ -163,9 +174,9 @@ begin
       return json_build_object('ok', false, 'reason', 'sold_out');
     end if;
   end if;
-  insert into jwi_coupon_uses(code, key) values (v_code, p_key);
+  insert into jwi_coupon_uses(code, key, cage) values (v_code, p_key, p_cage);
   return json_build_object('ok', true, 'code', v_code, 'rewards', c.rewards, 'note', c.note);
 end;
 $$;
-revoke all on function public.jwi_redeem(text, text, text) from public;
-grant execute on function public.jwi_redeem(text, text, text) to anon, authenticated;
+revoke all on function public.jwi_redeem(text, text, text, text) from public;
+grant execute on function public.jwi_redeem(text, text, text, text) to anon, authenticated;

@@ -30,7 +30,7 @@
 
 - **추가 · 수정:** SQL Editor에서 `supabase/coupons.sql`의 코드 · 보상 · 기간을 고쳐서 Run. 또는 Table Editor > `jwi_coupons`에서 줄을 직접 추가.
 - **보상 키:** `seed`(호박씨) · `apple`(사과 조각) · `snack`(간식) · `pea`(완두콩) · `mounjiro`(마운찌로) · `potion`(쥑닥쥑닥 물약) · `salon`(찍찍 살롱 이용권) · `doll`(애착 쥐의 애착 쥐)
-- **규칙:** 계정당 한 번, `starts_at` ~ `ends_at` 사이에만, `max_uses`가 있으면 선착순. 입력은 대소문자 · 공백을 무시해요.
+- **규칙:** 케이지마다 한 번(계정당 최대 3번), `starts_at` ~ `ends_at` 사이에만, `max_uses`가 있으면 선착순. 입력은 대소문자 · 공백을 무시해요.
 - **사용 현황:** `jwi_coupon_uses` 표 또는 `coupons.sql`의 목록 쿼리.
 
 ## 저장 방식
