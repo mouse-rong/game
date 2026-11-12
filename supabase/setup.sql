@@ -107,15 +107,19 @@ grant execute on function public.jwi_save(text, text, jsonb)  to anon, authentic
 --     potion=쥑닥쥑닥 물약, salon=찍찍 살롱 이용권, doll=애착 쥐의 애착 쥐
 -- =====================================================================
 create table if not exists public.jwi_coupons (
-  code        text primary key,               -- 대문자로 저장 (입력은 대소문자 · 공백 무시)
+  code        text primary key,               -- 영문 대문자만 (A-Z, 2~32자)
   rewards     jsonb not null,
   starts_at   timestamptz not null default now(),
   ends_at     timestamptz,                    -- 비우면 기한 없음
   max_uses    int,                            -- 전체 선착순 수량 (비우면 무제한)
   note        text,                           -- 사용하면 보여 줄 한마디 (선택)
   created_at  timestamptz not null default now(),
-  constraint jwi_coupons_code_upper check (code = upper(code))
+  constraint jwi_coupons_code_format check (code ~ '^[A-Z]{2,32}$')
 );
+-- 쿠폰 코드 규칙: 영문 대문자만 — 여러 번 실행해도 괜찮아요
+alter table public.jwi_coupons drop constraint if exists jwi_coupons_code_upper;
+alter table public.jwi_coupons drop constraint if exists jwi_coupons_code_format;
+alter table public.jwi_coupons add constraint jwi_coupons_code_format check (code ~ '^[A-Z]{2,32}$');
 create table if not exists public.jwi_coupon_uses (
   code     text not null references public.jwi_coupons(code) on delete cascade,
   key      text not null references public.jwi_accounts(key) on delete cascade,
@@ -163,6 +167,9 @@ begin
   end if;
   if p_cage is null or char_length(p_cage) not between 1 and 64 then
     raise exception 'invalid_input';
+  end if;
+  if v_code !~ '^[A-Z]{2,32}$' then
+    return json_build_object('ok', false, 'reason', 'not_found');
   end if;
   if exists (select 1 from jwi_coupon_uses where code = v_code and key = p_key and cage = p_cage)
      or (select count(*) from jwi_coupon_uses where code = v_code and key = p_key) >= 3 then

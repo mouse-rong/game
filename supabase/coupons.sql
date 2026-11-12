@@ -4,7 +4,7 @@
 --
 -- 보상 키: seed=호박씨, apple=사과 조각, snack=간식, pea=완두콩, mounjiro=마운찌로,
 --          potion=쥑닥쥑닥 물약, salon=찍찍 살롱 이용권, doll=애착 쥐의 애착 쥐
--- 시간은 한국 시간 기준으로 적으면 돼요 (+09).
+-- 코드는 영문 대문자만(A-Z, 2~32자). 시간은 한국 시간 기준으로 적으면 돼요 (+09).
 
 -- ▶ 쿠폰 추가 (같은 코드가 있으면 내용만 바꿔요)
 insert into public.jwi_coupons (code, rewards, starts_at, ends_at, max_uses, note)

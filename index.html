@@ -505,7 +505,7 @@ h3{font-size:16px;font-weight:400}
         <div class="section pbox">
           <h3>🎟 쿠폰 입력</h3>
           <p class="note" style="margin:-4px 0 8px">받은 쿠폰 코드를 입력하면 보상이 지금 케이지로 들어와요. 같은 쿠폰은 케이지마다 한 번씩 쓸 수 있어요.</p>
-          <form class="coupon-row" id="couponForm"><input class="input" id="cpCode" maxlength="32" placeholder="쿠폰 코드" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <form class="coupon-row" id="couponForm"><input class="input" id="cpCode" maxlength="32" placeholder="영문 대문자 쿠폰 코드" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" inputmode="latin" pattern="[A-Z]*">
             <button type="submit" class="pbtn pink" id="cpGo">사용</button></form>
           <div class="auth-msg" id="cpMsg"></div>
         </div>
@@ -540,7 +540,7 @@ const PATCH_NOTES=[
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
       '설정 메뉴가 생겼어요. 찍찍 소리 켜기 · 끄기와 쿠폰 입력이 여기 있어요.',
-      '쿠폰: 받은 코드를 설정 > 쿠폰 입력에 넣으면 보상이 들어와요 (케이지마다 한 번).',
+      '쿠폰: 받은 코드(영문 대문자)를 설정 > 쿠폰 입력에 넣으면 보상이 들어와요 (케이지마다 한 번).',
       '패치노트 메뉴가 생겼어요. 업데이트가 있으면 메뉴에 NEW 표시가 떠요.',
       '계정 로그인 · 자동 저장: 아이디와 비밀번호로 들어가면 진행상황이 서버에 저장돼서 어느 기기에서든 이어서 할 수 있어요.',
       '한 계정에 주인 + 케이지 세트를 최대 3개까지 만들고, 프로필에서 전환할 수 있어요.',
@@ -2081,14 +2081,20 @@ function renderSettings(){
   b.textContent=on?'🔈 켜짐':'🔇 꺼짐';b.classList.toggle('on',on);
   b.onclick=()=>{S.sound=!on?true:false;save();renderSettings();if(S.sound)squeakSound('찍!')};
   $('#couponForm').onsubmit=e=>{e.preventDefault();redeemCoupon()};
+  // 쿠폰 코드는 영문 대문자만: 소문자는 대문자로, 나머지(숫자 · 한글 · 기호 · 공백)는 빼요
+  const cp=$('#cpCode'),clean=()=>{const v=cp.value,f=v.toUpperCase().replace(/[^A-Z]/g,'');
+    if(v!==f){const pos=cp.selectionStart-(v.length-f.length);cp.value=f;try{cp.setSelectionRange(pos,pos)}catch(e){}
+      if(/[^A-Za-z]/.test(v))$('#cpMsg').textContent='쿠폰 코드는 영문 대문자만 입력할 수 있어요'}};
+  cp.oninput=e=>{if(!e.isComposing)clean()};cp.addEventListener('compositionend',clean);
   renderSaveState();
 }
 const CP_REASON={not_found:'없는 쿠폰 코드예요. 철자를 확인해 주세요',expired:'사용 기간이 끝난 쿠폰이에요',used:'이 케이지에서 이미 사용한 쿠폰이에요',
   sold_out:'선착순 수량이 모두 소진된 쿠폰이에요',auth:'계정 확인에 실패했어요. 다시 로그인해 주세요'};
 let cpBusy=false;
 async function redeemCoupon(){
-  const code=$('#cpCode').value.replace(/\s+/g,'').toUpperCase(),msg=t=>{$('#cpMsg').textContent=t};
+  const code=$('#cpCode').value.toUpperCase().replace(/[^A-Z]/g,''),msg=t=>{$('#cpMsg').textContent=t};
   if(!code)return msg('쿠폰 코드를 입력해 주세요');
+  if(!/^[A-Z]{2,32}$/.test(code))return msg('쿠폰 코드는 영문 대문자 2~32자예요');
   if(cpBusy)return;
   if(BACKEND!=='supa')return msg('쿠폰은 서버 저장이 연결된 상태에서만 쓸 수 있어요');
   cpBusy=true;$('#cpGo').disabled=true;msg('');
