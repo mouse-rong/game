@@ -564,7 +564,7 @@ const PATCH_NOTES=[
       '새 재화 사과 조각과 상점 가구 탭: 바닥 · 벽지 · 커튼 · 쳇바퀴로 케이지를 꾸밀 수 있어요.',
     ]],
     ['🔧 바뀐 점',[
-      '메리 크리 쥑쥑 벽지가 포근한 리넨 바탕에 초록 트리와 눈꽃 격자 무늬로 바뀌었어요.',
+      '메리 크리 쥑쥑 벽지가 깔끔한 베이지 바탕에 초록 트리와 눈꽃 격자 무늬로 바뀌었어요.',
       '패치노트를 날짜 · 항목별로 접었다 펼 수 있어요.',
       '모험 시간이 2 / 4 / 6시간으로 짧아졌어요.',
       '모험은 한 번에 1마리만 갈 수 있고, 모험 중에는 즉시 완료 · 모험 취소 버튼이 보여요.',
@@ -1723,7 +1723,7 @@ const FURN=[
   {id:'carpet',cat:'floor',name:'레드 카펫',price:3,desc:'푹신한 크리스마스 카펫',xmas:true},
   {id:'paint',cat:'wall',name:'쥐깍 페인트',price:1,desc:'단색 벽지 · 색상 선택 가능',color:true},
   {id:'modern',cat:'wall',name:'모던 쥑의 선택',price:2,desc:'위는 밝은 아이보리, 아래는 나무판자 벽'},
-  {id:'merry',cat:'wall',name:'메리 크리 쥑쥑',price:3,desc:'포근한 리넨 바탕에 초록 트리와 눈꽃 격자 무늬',xmas:true},
+  {id:'merry',cat:'wall',name:'메리 크리 쥑쥑',price:3,desc:'깔끔한 베이지 바탕에 초록 트리와 눈꽃 격자 무늬',xmas:true},
   {id:'sunshine',cat:'curtain',name:'해피 선샤인',price:1,desc:'하얀 커튼'},
   {id:'blind',cat:'curtain',name:'블라인드',price:1,desc:'창문을 가리는 블라인드'},
   {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 거는 크리스마스 가랜드',xmas:true},
@@ -1787,10 +1787,9 @@ function floorCSS(id,T){
 function tileModern(){return tile('modern',8,28,P=>{
   P(0,0,'#C99A6B',8,28);P(0,0,'#DDB283',1,28);P(7,0,'#A87A4E',1,28);P(3,9,'#B98B5E',1,4);P(5,18,'#B98B5E',1,5);
   P(0,0,'#D6A877',8,1);P(0,1,'#B78653',8,2);P(0,3,'#946638',8,1)})}
-function tileMerry(){return tile('merry4',32,40,P=>{   // 리넨 바탕 + 초록 트리 + 눈꽃으로 이어진 사선 격자 (뜨개 느낌)
-  const W=32,H=40,R=rng(11),bg='#ECE5D4';
+function tileMerry(){return tile('merry5',32,40,P=>{   // 깔끔한 베이지 바탕 + 초록 트리 + 눈꽃으로 이어진 사선 격자
+  const W=32,H=40,bg='#ECE5D4';
   P(0,0,bg,W,H);
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const r=R();if(r<.16)P(x,y,'#F3EEE2');else if(r<.27)P(x,y,'#E1D8C4')}   // 리넨 결
   const g=(x,y)=>((x+y)&1)?'#4D6A51':'#587A5C';   // 살짝 뜨개 질감이 나는 초록
   const put=(x,y)=>{x=((x%W)+W)%W;y=((y%H)+H)%H;P(x,y,g(x,y))};
   // 사선 격자: 눈꽃 꼭짓점 (0,0) · (16,20) 사이를 잇는 선
