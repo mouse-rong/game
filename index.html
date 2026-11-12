@@ -134,7 +134,10 @@ h3{font-size:16px;font-weight:400}
   background-image:linear-gradient(#E2D2AC 4px,#EADDBC 4px,#EADDBC 7px,transparent 7px),radial-gradient(#D9C69A 1.6px,transparent 1.7px),radial-gradient(#E2D1A8 1.6px,transparent 1.7px);
   background-size:100% 100%,22px 14px,30px 18px;background-position:0 0,4px 11px,14px 17px;background-repeat:no-repeat,repeat,repeat}
 .win-img{position:absolute;left:4px;top:clamp(10px,6%,30px);width:120px;height:93px;z-index:2;pointer-events:none}
-.deco-wheel{position:absolute;z-index:4;pointer-events:none}
+.deco-wheel{position:absolute;z-index:4;cursor:pointer;transform-origin:50% 100%;-webkit-tap-highlight-color:transparent}
+.deco-wheel.boing{animation:spotBoing .5s ease-out 1}
+@keyframes spotBoing{0%{transform:scale(1,1)}25%{transform:scale(.9,.84)}55%{transform:scale(1.05,1.1) translateY(-8%)}78%{transform:scale(.98,1.02) translateY(0)}100%{transform:scale(1,1)}}
+.fn-chip{background:var(--sky)!important}
 .stage.away-mode .deco-wall,.stage.away-mode .deco-floor,.stage.away-mode .deco-wheel{display:none}
 .shop-tabs{display:flex;gap:4px;margin-bottom:10px}
 .shop-tabs .pbtn{flex:1;font-size:16px;padding:9px 8px}
@@ -545,6 +548,7 @@ const INK='#422F12';
 const PATCH_NOTES=[
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
+      '쳇바퀴 · 쮜리스마스 트리를 누르면 쥐가 운동해서 몸무게가 1g 줄어요 (쥐마다 하루 3번).',
       '쮜리스마스 트리(호박씨 5개): 쳇바퀴 자리에 놓는 크리스마스 트리예요. 별 · 오너먼트 · 아주 작은 쥐 인형 · 선물 2개!',
       '상점 가구에 카테고리 탭(바닥 · 벽지 · 커튼 · 쳇바퀴)이 생겨서 원하는 것만 골라 볼 수 있어요.',
       '설정 메뉴가 생겼어요. 찍찍 소리 켜기 · 끄기와 쿠폰 입력이 여기 있어요.',
@@ -1724,8 +1728,8 @@ const FURN=[
   {id:'sunshine',cat:'curtain',name:'해피 선샤인',price:1,desc:'하얀 커튼'},
   {id:'blind',cat:'curtain',name:'블라인드',price:1,desc:'창문을 가리는 블라인드'},
   {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 거는 크리스마스 가랜드',xmas:true},
-  {id:'wheel',cat:'wheel',name:'운동해야쥐',price:5,desc:'투명한 바퀴 + 아이보리·파스텔 틀의 쳇바퀴'},
-  {id:'xmastree',cat:'wheel',name:'쮜리스마스 트리',price:5,cur:'seed',desc:'꼭대기엔 별, 가운데엔 오너먼트와 아주 작은 쥐 인형, 밑동엔 선물 2개',xmas:true},
+  {id:'wheel',cat:'wheel',name:'운동해야쥐',price:5,func:true,desc:'투명한 바퀴 + 아이보리·파스텔 틀의 쳇바퀴. 🏋️ 기능: 케이지에서 누르면 쥐 몸무게 -1g (쥐마다 하루 3번)'},
+  {id:'xmastree',cat:'wheel',name:'쮜리스마스 트리',price:5,cur:'seed',func:true,desc:'꼭대기엔 별, 가운데엔 오너먼트와 아주 작은 쥐 인형, 밑동엔 선물 2개. 🏋️ 기능: 케이지에서 누르면 쥐 몸무게 -1g (쥐마다 하루 3번)',xmas:true},
 ];
 const furnCur=f=>f.cur==='seed'?'seed':'apple';   // 가구 값: 기본은 사과 조각, cur:'seed'면 호박씨
 const FCOLORS={
@@ -1894,6 +1898,27 @@ function treeURL(){return artURL('xmastree2',28,35,()=>{
 })}
 const SPOT_OBJ={wheel:{url:()=>wheelURL(),w:28,h:33},xmastree:{url:()=>treeURL(),w:28,h:35}};   // 쳇바퀴 자리에 놓는 물건
 
+/* ---------- 쳇바퀴 자리 물건 누르기: 운동 (쥐마다 하루 3번, 몸무게 -1g) ---------- */
+const GYM_PER_DAY=3;
+function useSpot(){
+  if(!S||!S.deco?.on.wheel)return;
+  const el=$('#decoWheel');el.classList.remove('boing');void el.offsetWidth;el.classList.add('boing');   // 뾰잉!
+  squeakSound('찍!');
+  const home=homeIdx();if(!home.length)return;
+  const i=home.includes(S.sel)?S.sel:home[0];S.sel=i;
+  const m=S.mice[i],k=todayKey();
+  if(!m.gym||m.gym.date!==k)m.gym={date:k,n:0};
+  const what=S.deco.on.wheel==='xmastree'?'트리 주위를 뛰어다녔어요':'쳇바퀴를 신나게 돌렸어요';
+  if(m.gym.n>=GYM_PER_DAY){toast(`🏋️ ${m.mouse.name}${jo(m.mouse.name,'은')} 오늘 운동을 다 했어요 (${GYM_PER_DAY}/${GYM_PER_DAY})`);return}
+  const before=m.stats.weight;
+  if(before<=12){toast(`🏋️ ${m.mouse.name}${jo(m.mouse.name,'은')} 더 가벼워질 수 없어요`);return}
+  m.stats.weight=r1(Math.max(12,before-1));m.gym.n++;
+  playAnim('jump',null,i);particles('sparkle',4,i);
+  toast(`🏋️ ${m.mouse.name}${jo(m.mouse.name,'이')} ${what}! 무게 ${r1(before)}g → ${m.stats.weight}g (오늘 ${m.gym.n}/${GYM_PER_DAY})`);
+  save();renderAll();
+}
+$('#decoWheel').addEventListener('click',e=>{e.stopPropagation();useSpot()});
+
 /* ---------- 케이지에 적용 ---------- */
 const decoT=()=>Math.max(2,Math.round(pxScale*.6));
 function applyDeco(){
@@ -1934,7 +1959,7 @@ function furnCard(f){
   const btn=!own?`<button class="pbtn butter" data-fbuy="${f.id}" ${have<f.price?'disabled':''}>구매</button>`
     :on?`<span style="display:flex;align-items:center"><span class="chip" style="background:var(--mint)">적용 중</span><button class="pbtn sm" data-foff="${f.cat}">해제</button></span>`
     :`<button class="pbtn pink" data-fon="${f.id}">적용</button>`;
-  return`<div class="card pbox"><div class="top">${furnPreview(f)}<div style="min-width:0"><div class="nm">${f.name}${f.xmas?' <span class="chip">🎄</span>':''}</div><div class="ds">${f.desc}</div></div></div>
+  return`<div class="card pbox"><div class="top">${furnPreview(f)}<div style="min-width:0"><div class="nm">${f.name}${f.func?' <span class="chip fn-chip">기능</span>':''}${f.xmas?' <span class="chip">🎄</span>':''}</div><div class="ds">${f.desc}</div></div></div>
     ${sw}<div class="bottom"><span class="price">${ico(cur)}${own?'<span class="muted" style="font-size:13px">보유 중</span>':f.price}</span>${btn}</div></div>`;
 }
 let furnCat='floor';
