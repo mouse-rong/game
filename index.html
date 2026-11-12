@@ -136,7 +136,7 @@ h3{font-size:16px;font-weight:400}
 .deco-floor.def{background-color:#F0E5C8;box-shadow:none;
   background-image:linear-gradient(#E2D2AC 4px,#EADDBC 4px,#EADDBC 7px,transparent 7px),radial-gradient(#D9C69A 1.6px,transparent 1.7px),radial-gradient(#E2D1A8 1.6px,transparent 1.7px);
   background-size:100% 100%,22px 14px,30px 18px;background-position:0 0,4px 11px,14px 17px;background-repeat:no-repeat,repeat,repeat}
-.win-img{position:absolute;left:4px;top:clamp(10px,6%,30px);width:120px;height:93px;z-index:2;pointer-events:none}
+.win-img{position:absolute;left:4px;top:clamp(10px,6%,30px);transform:translateX(-50%);width:120px;height:93px;z-index:2;pointer-events:none}
 .deco-wheel{position:absolute;z-index:4;cursor:pointer;transform-origin:50% 100%;-webkit-tap-highlight-color:transparent}
 .deco-wheel.boing{animation:spotBoing .5s ease-out 1}
 @keyframes spotBoing{0%{transform:scale(1,1)}25%{transform:scale(.9,.84)}55%{transform:scale(1.05,1.1) translateY(-8%)}78%{transform:scale(.98,1.02) translateY(0)}100%{transform:scale(1,1)}}
@@ -463,6 +463,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
         <div class="deco-wall" id="decoWall"></div>
         <div class="deco-floor def" id="decoFloor"></div>
         <img class="px win-img" id="winImg" alt="">
+        <img class="px win-img" id="winImg2" alt="">
         <img class="px deco-wheel hidden" id="decoWheel" alt="">
         <canvas class="doll hidden" id="dollCv"></canvas>
         <span class="chip doll-tag hidden" id="dollTag"></span>
@@ -571,6 +572,10 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
     ]],
+    ['🔧 바뀐 점',[
+      '창문이 두 개가 됐어요. 케이지 폭을 3등분한 자리에 하나씩, 벽 가운데 높이에 걸려 있어요.',
+      '커튼을 고르면 두 창문에 똑같이 달려요.',
+    ]],
   ]},
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
@@ -612,7 +617,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121538';
+const APP_VERSION='202611121553';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -2133,13 +2138,15 @@ function applyDeco(){
   const fl=$('#decoFloor'),wl=$('#decoWall');
   fl.className='deco-floor'+(on.floor?'':' def');fl.style.cssText=floorCSS(on.floor,T);
   wl.style.cssText=wallCSS(on.wall,T);
-  const wc=$('#winImg'),wu=windowURL(on.curtain);if(wc.getAttribute('src')!==wu)wc.src=wu;
-  // 창문: 케이지 높이에 맞춰 살짝 아래로 · 벽(바닥 위)에 다 들어가도록 필요하면 작게
-  //       넓은 화면(컴퓨터)에서는 창문 · 커튼을 도트 4배로 크게 (휴대폰은 3배)
-  const sr=$('#stage').getBoundingClientRect(),stH=sr.height;
-  if(stH){const flH=parseFloat(getComputedStyle($('#stage')).getPropertyValue('--floor'))||0,top=clamp(Math.round(stH*.06),10,30),
-    u=sr.width>=560?4:3,k=clamp((stH-flH-top-8)/(31*u),.5,1),ww=Math.round(40*u*k),wh=Math.round(31*u*k);
-    wc.style.top=top+'px';wc.style.width=ww+'px';wc.style.height=wh+'px';}
+  // 창문 2개: 케이지 폭을 3등분하는 두 선(1/3 · 2/3) 위에, 벽(바닥 위) 높이의 가운데에 놓아요. 커튼도 두 창문에 똑같이
+  //   넓은 화면(컴퓨터)에서는 창문 · 커튼을 도트 4배로 크게 (휴대폰은 3배) · 벽이나 폭에 다 안 들어가면 작게
+  const wu=windowURL(on.curtain),wins=[$('#winImg'),$('#winImg2')];
+  wins.forEach(wc=>{if(wc.getAttribute('src')!==wu)wc.src=wu});
+  const sr=$('#stage').getBoundingClientRect(),stH=sr.height,stW=sr.width;
+  if(stH&&stW){const flH=parseFloat(getComputedStyle($('#stage')).getPropertyValue('--floor'))||0,wallH=stH-flH,
+    u=stW>=560?4:3,k=clamp(Math.min((wallH-16)/(31*u),(stW/3-14)/(40*u)),.4,1),ww=Math.round(40*u*k),wh=Math.round(31*u*k),
+    top=Math.max(6,Math.round((wallH-wh)/2));
+    wins.forEach((wc,n)=>{wc.style.left=Math.round(stW*(n+1)/3)+'px';wc.style.top=top+'px';wc.style.width=ww+'px';wc.style.height=wh+'px'});}
   const wh=$('#decoWheel'),obj=SPOT_OBJ[on.wheel];wh.classList.toggle('hidden',!obj);
   if(obj){
     const u=obj.url();if(wh.getAttribute('src')!==u)wh.src=u;
