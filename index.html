@@ -570,6 +570,7 @@ const PATCH_NOTES=[
     ['🆕 새 기능',[
       '쥐를 누른 채로 끌면(또는 꾹 누르고 있으면) 쥐를 들어서 원하는 곳으로 옮길 수 있어요. 손을 놓으면 바닥으로 톡 내려와요.',
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
+      '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
     ]],
     ['🔧 바뀐 점',[
@@ -617,7 +618,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121609';
+const APP_VERSION='202611121611';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -918,7 +919,7 @@ const setPx=(t,list)=>{const o=t.slice();list.forEach(([r,c,ch])=>{o[r]=o[r].sli
 const ARM_OFF=[[10,15,'.'],[10,16,'.'],[11,16,'.']];
 const TPL_FIGHT_A=setPx(TPL_STAND,[...ARM_OFF,[9,16,'p'],[9,17,'p'],[8,17,'P']]);
 const TPL_FIGHT_B=setPx(TPL_STAND,[...ARM_OFF,[11,16,'p'],[11,17,'p'],[12,16,'P']]);
-/* 들어 올린 자세: 사용자 도트(머리가 왼쪽)를 그대로 옮기고, 다른 자세처럼 머리가 오른쪽을 보도록 좌우 반전해서 써요 */
+/* 들어 올린 자세: 사용자 도트(머리가 왼쪽)를 그대로 옮기고 · 코끝(n)과 수염은 엎드린 자세와 같은 색 · 같은 크기로, 다른 자세처럼 머리가 오른쪽을 보도록 좌우 반전해서 써요 */
 const TPL_HOLD_SRC=[
 ".........kkkkkkkk.......",
 "........kbbbbbbbsk......",
@@ -930,7 +931,7 @@ const TPL_HOLD_SRC=[
 "....kbbsPpsbbbbbsssk.p..",
 "...kbbbbbbssssssssk..p..",
 "...kbbebbskkkkkkkk...p..",
-"...kbbbskk......P....p..",
+"...nbbbskk......P....p..",
 "....kkkk.P.....p.....p..",
 "....................p...",
 "....................p...",
@@ -942,7 +943,7 @@ const mirrorRows=t=>t.map(r=>[...r].reverse().join(''));
 const TPL_HOLD=mirrorRows(TPL_HOLD_SRC),TPL_HOLD_KICK=mirrorRows(TPL_HOLD_KICK_SRC);
 const POSES={lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
   fightA:{t:TPL_FIGHT_A,row:14,col:9},fightB:{t:TPL_FIGHT_B,row:14,col:9},
-  hold:{t:TPL_HOLD,row:2,col:11,noNose:true},holdK:{t:TPL_HOLD_KICK,row:2,col:11,noNose:true}};
+  hold:{t:TPL_HOLD,row:2,col:11},holdK:{t:TPL_HOLD_KICK,row:2,col:11}};
 const MOUSE_DEFAULT='#32312F';
 function mousePalette(base){
   const l=rgbToHsl(...hexToRgb(base))[2];
@@ -1300,7 +1301,7 @@ function startHold(cx,cy){
   if(INT&&(INT.a===r.i||INT.b===r.i))endInteraction(true);
   clearTimeout(r.animT);r.anim={face:null,until:0};
   r.inner.classList.remove('walking','jump','happy','boing','shake','rise','tussle');
-  Object.assign(r,{state:'held',moving:false,after:null,goal:null,faceAs:null,standUntil:0,sniffUntil:0,twitch:false,
+  Object.assign(r,{state:'held',moving:false,after:null,goal:null,faceAs:null,standUntil:0,sniffUntil:Date.now()+1100,twitch:false,
     holdMode:Math.random()<.5?'calm':'kick',pose:'hold'});
   r.inner.classList.add(r.holdMode==='kick'?'hold-kick':'hold-calm');
   r.el.classList.add('held');document.body.classList.add('grabbing');
