@@ -9,7 +9,7 @@
 | `index.html` | 게임 전체. 패치할 때는 이 파일만 바꿔서 푸시하면 돼요. |
 | `config.js` | Supabase 연결 설정(URL · 공개 키). 한 번 채워 두면 패치해도 그대로 유지돼요. |
 | `supabase/setup.sql` | Supabase에 한 번 실행하는 테이블 · 함수 설정. |
-| `fonts/dongle-bold.woff2` | 게임 글꼴(동글 Bold, 한글 11,172자 전체). 라이선스는 `fonts/OFL-Dongle.txt`(SIL OFL 1.1). |
+| `fonts/dongle-bold.woff2` | 보조 글꼴(동글 Bold, 한글 11,172자). 기본 글꼴 주아에 없는 '쮝' 같은 글자만 이걸로 보여요. 라이선스는 `fonts/OFL-Dongle.txt`(SIL OFL 1.1). |
 
 ## Supabase 연결 (처음 한 번)
 
