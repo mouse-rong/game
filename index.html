@@ -202,6 +202,7 @@ h3{font-size:16px;font-weight:400}
 .squeak:after{content:"";position:absolute;bottom:-9px;left:calc(50% - 6px);width:12px;height:9px;background:#fff;box-shadow:-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink)}
 .squeak:before{content:"";position:absolute;bottom:-15px;left:calc(50% - 3px);width:6px;height:6px;background:#fff;z-index:1;box-shadow:-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink),0 3px 0 0 var(--ink)}
 @keyframes sqpop{0%{transform:translateX(-50%) translateY(6px) scale(.6)}100%{transform:translateX(-50%) scale(1)}}
+.pt-emo{line-height:1;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;transform-origin:50% 50%}
 .pt.sparkle{animation:twinkle .9s steps(5) forwards}
 @keyframes twinkle{0%{transform:scale(0) rotate(0);opacity:1}35%{transform:scale(1.15) rotate(0)}55%{transform:scale(.55)}75%{transform:scale(1)}100%{transform:scale(0);opacity:.6}}
 .stink{position:absolute;width:12px;opacity:.8;animation:stink 1.6s steps(4) infinite;z-index:2}
@@ -576,6 +577,7 @@ const PATCH_NOTES=[
       '새 재화 사과 조각과 상점 가구 탭: 바닥 · 벽지 · 커튼 · 쳇바퀴로 케이지를 꾸밀 수 있어요.',
     ]],
     ['🔧 바뀐 점',[
+      '싫어! 관계에서 투닥거릴 때 뜨는 빠직 표시가 💢 모양으로 바뀌었어요.',
       '메리 크리 쥑쥑 벽지가 깔끔한 베이지 바탕에 빨간 눈꽃 격자 무늬로 바뀌었어요.',
       '레드 카펫이 레트 카펫으로 이름이 바뀌고, 노란 테두리 없이 차분한 와인빛 체크 무늬가 됐어요.',
       '패치노트를 날짜 · 항목별로 접었다 펼 수 있어요.',
@@ -594,7 +596,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121146';
+const APP_VERSION='202611121159';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1492,14 +1494,15 @@ function spritePos(i){const r=RT[i];if(!r||r.x===null)return{cx:stageW()/2,feet:
 function particles(kind,n=5,i=S.sel,at){
   const stage=$('#stage'),{cx,feet,w,h}=at||spritePos(i);
   for(let k=0;k<n;k++){
-    const p=document.createElement('img');p.className='px pt';
+    const emo=kind==='anger';   // 빠직: 💢 이모지 그대로
+    const p=document.createElement(emo?'span':'img');p.className=emo?'pt pt-emo':'px pt';
     let icon='heart',sz=18+Math.random()*9;
     if(kind==='bubble'){icon=Math.random()<.5?'bubS':'bubL';sz=icon==='bubS'?(10+Math.random()*7):(16+Math.random()*12)}
     else if(kind==='crumb'||kind==='seed'){icon='seed';sz=kind==='crumb'?11:20}
     else if(kind==='music'){icon='music';sz=15}
-    else if(kind==='anger'){icon='anger';sz=16+Math.random()*6}
+    else if(kind==='anger'){sz=18+Math.random()*6}
     else if(kind==='sparkle'){icon='sparkle';sz=16+Math.random()*14;p.classList.add('sparkle')}
-    p.src=iconURL(icon);p.style.width=sz+'px';
+    if(emo){p.textContent='\u{1F4A2}';p.style.fontSize=sz+'px'}else{p.src=iconURL(icon);p.style.width=sz+'px'}
     p.style.left=(cx+(Math.random()-.55)*w*.8)+'px';
     p.style.bottom=(feet+h*(kind==='sparkle'?(.15+Math.random()*.9):(.35+Math.random()*.5)))+'px';
     p.style.setProperty('--dx',((Math.random()-.5)*(kind==='bubble'?80:50))+'px');
