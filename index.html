@@ -1792,25 +1792,25 @@ function floorCSS(id,T){
 function tileModern(){return tile('modern',8,28,P=>{
   P(0,0,'#C99A6B',8,28);P(0,0,'#DDB283',1,28);P(7,0,'#A87A4E',1,28);P(3,9,'#B98B5E',1,4);P(5,18,'#B98B5E',1,5);
   P(0,0,'#D6A877',8,1);P(0,1,'#B78653',8,2);P(0,3,'#946638',8,1)})}
-function tileMerry(){return tile('merry7',32,40,P=>{   // 깔끔한 베이지 바탕 + 눈꽃으로 이어진 빨간 사선 격자
-  const W=32,H=40,bg='#ECE5D4';
+function tileMerry(){return tile('merry8',26,34,P=>{   // 깔끔한 베이지 바탕 + 눈꽃으로 이어진 빨간 사선 격자
+  const W=26,H=34,HW=W/2,HH=H/2,bg='#ECE5D4';
   P(0,0,bg,W,H);
   const g=()=>'#AF2323';   // 격자 · 눈꽃 색
   const put=(x,y)=>{x=((x%W)+W)%W;y=((y%H)+H)%H;P(x,y,g(x,y))};
-  // 사선 격자: 눈꽃 꼭짓점 (0,0) · (16,20) 사이를 잇는 선
-  for(let t=0;t<=20;t++){const dx=Math.round(t*16/20);put(dx,t);put(-dx,t);put(dx,-t);put(-dx,-t)}
-  for(let t=0;t<=20;t++){const dx=Math.round(t*16/20);put(16+dx,20+t);put(16-dx,20+t);put(16+dx,20-t);put(16-dx,20-t)}
+  // 사선 격자: 눈꽃 꼭짓점 (0,0) · (W/2,H/2) 사이를 잇는 선
+  for(let t=0;t<=HH;t++){const dx=Math.round(t*HW/HH);put(dx,t);put(-dx,t);put(dx,-t);put(-dx,-t)}
+  for(let t=0;t<=HH;t++){const dx=Math.round(t*HW/HH);put(HW+dx,HH+t);put(HW-dx,HH+t);put(HW+dx,HH-t);put(HW-dx,HH-t)}
   // 꼭짓점의 눈꽃 (가운데 비우고 팔 8개)
   const flake=(cx,cy)=>{for(let k=-3;k<=3;k++){if(!k)continue;put(cx,cy+k);put(cx+k,cy)}
     for(let k=1;k<=2;k++){put(cx+k,cy+k);put(cx-k,cy+k);put(cx+k,cy-k);put(cx-k,cy-k)}
     put(cx-1,cy-4);put(cx+1,cy-4);put(cx-1,cy+4);put(cx+1,cy+4);put(cx-4,cy-1);put(cx-4,cy+1);put(cx+4,cy-1);put(cx+4,cy+1);
     P(((cx%W)+W)%W,((cy%H)+H)%H,bg)};
-  flake(0,0);flake(16,20);
+  flake(0,0);flake(HW,HH);
 })}
 function wallCSS(id,T){
   if(id==='paint')return`background:${S.deco.color.paint}`;
   if(id==='modern')return`background:url(${tileModern()}) left 0 bottom var(--floor,0px)/${8*T}px ${28*T}px repeat-x,#FBF6E9`;
-  if(id==='merry')return`background:url(${tileMerry()}) 0 0/${32*T}px ${40*T}px repeat,#ECE5D4`;
+  if(id==='merry')return`background:url(${tileMerry()}) 0 0/${26*T}px ${34*T}px repeat,#ECE5D4`;
   return'';
 }
 /* ---------- 창문 + 커튼 (40×31칸, 창문은 x3~36 · y2~27) ---------- */
