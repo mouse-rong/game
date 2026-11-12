@@ -311,6 +311,10 @@ h3{font-size:16px;font-weight:400}
 .modal-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:14px;flex-wrap:wrap}
 .reward-list{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .reward{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff}
+.update-bar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:210;display:flex;align-items:center;gap:10px;
+  background:var(--ink);color:var(--card);padding:8px 8px 8px 14px;font-size:14px;max-width:92vw;
+  box-shadow:0 -3px 0 0 var(--ink),0 3px 0 0 var(--ink),-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink);animation:pop .2s steps(2)}
+.update-bar .pbtn{margin:0}
 #toasts{position:fixed;left:50%;top:16px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:200;pointer-events:none;width:max-content;max-width:92vw}
 .toast{background:var(--ink);color:var(--card);padding:8px 14px;font-size:14px;animation:pop .2s steps(2);
   box-shadow:0 -3px 0 0 var(--ink),0 3px 0 0 var(--ink),-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink)}
@@ -585,6 +589,8 @@ const PATCH_NOTES=[
   ]},
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
+/* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
+const APP_VERSION='202611121140';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1577,6 +1583,23 @@ function say(text){
   b.classList.remove('hidden');b.style.animation='none';void b.offsetWidth;b.style.animation='';
   clearTimeout(bubbleT);bubbleT=setTimeout(()=>b.classList.add('hidden'),2600);
 }
+/* 새 버전 확인: 열 때 · 다시 볼 때 · 5분마다 version.json을 캐시 없이 확인 */
+let updateShown=false;
+async function checkUpdate(){
+  if(updateShown||location.protocol==='file:')return;
+  try{
+    const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    const {v}=await r.json();if(!v||v===APP_VERSION)return;
+    updateShown=true;
+    const bar=document.createElement('div');bar.className='update-bar';
+    bar.innerHTML='<span>✨ 새 업데이트가 있어요</span><button class="pbtn sm pink" type="button">새로고침</button>';
+    bar.querySelector('button').onclick=async()=>{try{if(S&&ACC){save();await flushSave()}}catch(e){}location.reload()};
+    document.body.appendChild(bar);
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
+setInterval(checkUpdate,5*60*1000);
+setTimeout(checkUpdate,3000);
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),2400)}
 
 /* =========================================================
