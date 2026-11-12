@@ -478,6 +478,7 @@ h3{font-size:16px;font-weight:400}
 <div id="modal" class="hidden"><div class="modal-box pbox" id="modalBox"></div></div>
 <div id="toasts"></div>
 
+<script src="config.js"></script>
 <script>
 /* =========================================================
    데이터 정의 (기획서 기반)
@@ -2030,14 +2031,19 @@ function startLoops(){
 
 /* =========================================================
    계정 · 자동 저장
-   - 계정과 진행상황은 이 페이지의 서버 저장소(db)에 보관 → 다른 기기에서도 로그인해서 이어하기
-   - 서버 저장소를 쓸 수 없는 화면에서는 이 브라우저(localStorage)에만 저장
-   - 개인 식별용: 비밀번호는 해시로만 보관하고, 보안 인증은 하지 않아요
+   저장소 우선순위
+   1) Supabase  — config.js에 주소·키가 있고 서버 함수가 준비돼 있으면 (GitHub Pages 등 어디서든 계정별 서버 저장)
+   2) claude.ai 페이지의 서버 저장소(db)
+   3) 이 브라우저(localStorage)
+   개인 식별용: 비밀번호는 브라우저에서 해시로 바꿔 보내고, Supabase는 그 값을 다시 bcrypt로 보관해요
 ========================================================= */
 const SESSION_KEY='jwi-session',LOCAL_ACC='jwi-acc:',LOCAL_SAVE='jwi-save:',LEGACY_DONE='jwi-legacy-imported';
-let ACC=null,DB=null,dbReady=null;
+let ACC=null,DB=null,dbReady=null,BACKEND='local',SUPA_ERR='';
 const MAX_CAGES=3;
 let SL={cur:0,slots:[]};   // 계정의 케이지(주인+쥐) 세트들: slots[i]=저장 JSON, cur=지금 케이지
+const CFG=window.JWI_CONFIG||{};
+const SUPA={url:String(CFG.supabaseUrl||'').trim().replace(/\/+$/,''),key:String(CFG.supabaseAnonKey||'').trim()};
+const remoteOn=()=>BACKEND!=='local';
 function lsGet(k){try{const t=localStorage.getItem(k);return t?JSON.parse(t):null}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
@@ -2047,13 +2053,30 @@ async function pwHash(id,pw){
   const txt='jwi-kiugi:'+normId(id)+':'+pw;
   try{const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt));return[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('')}
   catch(e){let h1=0x811c9dc5,h2=0x1234567;for(const ch of txt){const c=ch.codePointAt(0);h1=Math.imul(h1^c,16777619);h2=Math.imul(h2^c,2246822519)}
-    return'f'+(h1>>>0).toString(16)+(h2>>>0).toString(16)}
+    return'f'+(h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0')}
+}
+/* Supabase RPC (PostgREST) — 라이브러리 없이 fetch로 호출 */
+async function supaRpc(fn,args){
+  const headers={apikey:SUPA.key,'Content-Type':'application/json'};
+  if(SUPA.key.startsWith('eyJ'))headers.Authorization='Bearer '+SUPA.key;   // 예전 anon(JWT) 키
+  let r;
+  try{r=await fetch(`${SUPA.url}/rest/v1/rpc/${fn}`,{method:'POST',headers,body:JSON.stringify(args)})}
+  catch(e){const er=new Error('network');er.code='unavailable';throw er}
+  const t=await r.text();
+  if(!r.ok){const er=new Error(`supabase ${r.status}: ${t.slice(0,200)}`);
+    er.code=(r.status===413||/too_large/.test(t))?'quota_exceeded':(r.status===404||/PGRST202/.test(t))?'no_function':(r.status===401||r.status===403)?'bad_key':'supa_'+r.status;throw er}
+  return t?JSON.parse(t):null;
 }
 function initStore(){
   dbReady=(async()=>{
-    const c=window.claude;if(!c||typeof c.use!=='function')return null;
-    try{DB=await c.use('db')}catch(e){DB=null}
-    return DB;
+    if(SUPA.url&&SUPA.key){
+      try{await supaRpc('jwi_login',{p_key:'u00',p_h:'ping'});BACKEND='supa';return BACKEND}
+      catch(e){console.warn(e);SUPA_ERR=e.code==='no_function'?'Supabase에 게임용 함수가 아직 없어요 (supabase/setup.sql 실행 필요)'
+        :e.code==='bad_key'?'Supabase 키를 확인해 주세요':'Supabase에 연결하지 못했어요'}
+    }
+    const c=window.claude;
+    if(c&&typeof c.use==='function'){try{DB=await c.use('db')}catch(e){DB=null}}
+    BACKEND=DB?'claude':'local';return BACKEND;
   })();
   return dbReady;
 }
@@ -2061,28 +2084,40 @@ async function dbCall(fn){
   try{return await fn()}
   catch(e){if(e&&e.code==='unavailable'){await new Promise(r=>setTimeout(r,400+Math.random()*700));return await fn()}throw e}
 }
+/* 서버 기록과 이 브라우저 기록 중 더 최신 것 (서버 저장이 실패했던 기록이 남아 있으면 그걸로) */
+function newerRec(remote,key){
+  const local=normRec(lsGet(LOCAL_SAVE+key));
+  if(remote&&(!local||remote.at>=local.at))return remote;
+  return local&&remoteOn()?{...local,fromLocal:true}:local;
+}
 const Store={
-  async getAccount(key){
-    if(DB){const s=await dbCall(()=>DB.doc('accounts/'+key).get());const a=s.exists?s.data():null;
-      if(a&&a.h)lsSet(LOCAL_ACC+key,a);else{lsDel(LOCAL_ACC+key);lsDel(LOCAL_SAVE+key)}   // 서버에서 지워진 계정은 이 브라우저 기록도 정리
-      return a&&a.h?a:null}
-    return lsGet(LOCAL_ACC+key);
-  },
-  async claim(key,body){   // 아이디 선점: 짧은 lease 동안 비어 있을 때만 기록
-    if(!DB){if(lsGet(LOCAL_ACC+key))return false;lsSet(LOCAL_ACC+key,body);return true}
-    const ref=DB.doc('accounts/'+key);
+  async signup(key,id,h){   // → true(생성) | false(이미 있음)
+    if(BACKEND==='supa'){const ok=await supaRpc('jwi_signup',{p_key:key,p_id:id,p_h:h});if(ok===true)lsDel(LOCAL_SAVE+key);return ok===true}
+    const body={id,h,at:Date.now()};
+    if(BACKEND==='local'){if(lsGet(LOCAL_ACC+key))return false;lsSet(LOCAL_ACC+key,body);lsDel(LOCAL_SAVE+key);return true}
+    const ref=DB.doc('accounts/'+key);   // claude.ai: 짧은 lease 동안 비어 있을 때만 기록
     const l=await dbCall(()=>ref.acquire({holder:'signup-'+Math.random().toString(36).slice(2),ttlMs:5000}));
     if(!l.acquired)return false;
     const s=await dbCall(()=>ref.get());if(s.exists&&s.data()?.h)return false;
     await dbCall(()=>ref.set(body));lsSet(LOCAL_ACC+key,body);lsDel(LOCAL_SAVE+key);return true;
   },
-  async getSave(key){
-    const local=normRec(lsGet(LOCAL_SAVE+key));let remote=null;
-    if(DB){const s=await dbCall(()=>DB.doc('saves/'+key).get());if(s.exists)remote=normRec(s.data())}
-    if(remote&&(!local||remote.at>=local.at))return remote;
-    return local&&DB?{...local,fromLocal:true}:local;   // 서버 저장이 실패했던 더 최신 기록이 이 브라우저에 있으면 그걸로
+  async login(key,h){       // → {id, rec} | null
+    if(BACKEND==='supa'){const r=await supaRpc('jwi_login',{p_key:key,p_h:h});if(!r||!r.id)return null;return{id:r.id,rec:newerRec(normRec(r.save),key)}}
+    let acc,remote=null;
+    if(BACKEND==='claude'){
+      const s=await dbCall(()=>DB.doc('accounts/'+key).get());acc=s.exists?s.data():null;
+      if(!acc||!acc.h){lsDel(LOCAL_ACC+key);lsDel(LOCAL_SAVE+key);return null}   // 서버에서 지워진 계정은 이 브라우저 기록도 정리
+      lsSet(LOCAL_ACC+key,acc);
+    }else acc=lsGet(LOCAL_ACC+key);
+    if(!acc||acc.h!==h)return null;
+    if(BACKEND==='claude'){const s=await dbCall(()=>DB.doc('saves/'+key).get());if(s.exists)remote=normRec(s.data())}
+    return{id:acc.id,rec:newerRec(remote,key)};
   },
-  async putSave(key,rec){if(DB)await dbCall(()=>DB.doc('saves/'+key).set({at:rec.at,cur:rec.cur,slots:rec.slots,v:3}))},
+  async putSave(key,h,rec){
+    const body={at:rec.at,cur:rec.cur,slots:rec.slots,v:3};
+    if(BACKEND==='supa'){const ok=await supaRpc('jwi_save',{p_key:key,p_h:h,p_data:body});if(ok!==true){const e=new Error('auth');e.code='auth';throw e}return}
+    if(BACKEND==='claude')await dbCall(()=>DB.doc('saves/'+key).set(body));
+  },
 };
 /* 예전 한 케이지 저장({data}) · 새 저장({cur,slots}) 모두 같은 모양으로 */
 function normRec(d){
@@ -2099,18 +2134,18 @@ function save(){
   if(!S||!ACC)return;
   SL.slots[SL.cur]=JSON.stringify(S);
   lsSet(LOCAL_SAVE+ACC.key,{at:Date.now(),cur:SL.cur,slots:SL.slots});
-  if(!DB)return renderSaveState();
+  if(!remoteOn())return renderSaveState();
   dirty=true;clearTimeout(saveT);saveT=setTimeout(flushSave,2000);renderSaveState();
 }
 async function flushSave(){
   clearTimeout(saveT);
-  if(!DB||!ACC||!dirty||saving)return;
-  const key=ACC.key,rec=normRec(lsGet(LOCAL_SAVE+key));if(!rec)return;
+  if(!remoteOn()||!ACC||!dirty||saving)return;
+  const key=ACC.key,h=ACC.h,rec=normRec(lsGet(LOCAL_SAVE+key));if(!rec)return;
   saving=true;dirty=false;renderSaveState();
-  try{await Store.putSave(key,rec);lastSaved=Date.now();saveErr=null}
+  try{await Store.putSave(key,h,rec);lastSaved=Date.now();saveErr=null}
   catch(e){saveErr=e?.code||'error';dirty=true;console.warn('save failed',e)}
   saving=false;renderSaveState();
-  if(dirty&&ACC&&ACC.key===key)saveT=setTimeout(flushSave,saveErr==='quota_exceeded'?60000:saveErr?8000:1500);
+  if(dirty&&ACC&&ACC.key===key&&saveErr!=='auth')saveT=setTimeout(flushSave,saveErr==='quota_exceeded'?60000:saveErr?8000:1500);
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushSave()});
 window.addEventListener('pagehide',()=>flushSave());
@@ -2118,8 +2153,9 @@ const hhmm=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+'
 let lastAcctHTML='';
 function renderSaveState(){
   if(!ACC)return;
-  const st=!DB?'💾 이 브라우저에 자동 저장 중'
+  const st=!remoteOn()?'💾 이 브라우저에 자동 저장 중'
     :saving?'☁ 저장 중…'
+    :saveErr==='auth'?'⚠ 계정 확인에 실패했어요 · 다시 로그인해 주세요'
     :saveErr==='quota_exceeded'?'⚠ 저장 공간이 가득 찼어요'
     :saveErr?'⚠ 서버 저장 실패 · 곧 다시 시도해요'
     :dirty?'☁ 곧 저장돼요'
@@ -2161,8 +2197,8 @@ function showAuth(msg=''){
   sizeCanvas(drawMouse($('#authCv'),{color:MOUSE_DEFAULT,face:'happy'}),3);
   setAuthMode(authMode);authBusy(false);$('#aMsg').textContent=msg;
   const sess=lsGet(SESSION_KEY);if(sess&&!$('#aId').value)$('#aId').value=sess.id||'';
-  dbReady.then(()=>{$('#aStore').innerHTML=DB?'☁ 진행상황이 서버에 자동 저장돼서 다른 기기에서도 로그인해 이어서 할 수 있어요.'
-    :'💾 지금은 서버 저장소를 쓸 수 없어서 이 브라우저에만 저장돼요.'});
+  dbReady.then(()=>{$('#aStore').textContent=remoteOn()?'☁ 진행상황이 계정별로 서버에 자동 저장돼서 어떤 기기에서든 로그인해 이어서 할 수 있어요.'
+    :'💾 지금은 서버 저장소를 쓸 수 없어서 이 브라우저에만 저장돼요.'+(SUPA_ERR?` (${SUPA_ERR})`:'')});
 }
 function setAuthMode(m){
   authMode=m;const su=m==='signup';
@@ -2184,22 +2220,21 @@ async function submitAuth(){
     await dbReady;
     const key=idKey(id),h=await pwHash(id,pw);
     if(su){
-      if(!await Store.claim(key,{id,h,at:Date.now()})){authBusy(false);return msg('이미 있는 아이디예요. 다른 아이디를 써 주세요')}
-      ACC={key,id};lsSet(SESSION_KEY,{key,id,h});SL={cur:0,slots:[]};
+      if(!await Store.signup(key,id,h)){authBusy(false);return msg('이미 있는 아이디예요. 다른 아이디를 써 주세요')}
+      ACC={key,id,h};lsSet(SESSION_KEY,{key,id,h});SL={cur:0,slots:[]};
       const imp=$('#aImport').checked&&!$('#aImportWrap').classList.contains('hidden')?prepState(legacySave()):null;
       $('#aPw').value=$('#aPw2').value='';
       if(imp){S=imp;lsSet(LEGACY_DONE,true);save();flushSave();enterGame();toast(`👤 ${id} 계정에 기존 쥐 데이터를 옮겼어요!`)}
       else{S=null;openSetup();toast(`👤 ${id} 계정이 만들어졌어요!`)}
     }else{
-      const acc=await Store.getAccount(key);
-      if(!acc||acc.h!==h){authBusy(false);return msg('아이디 또는 비밀번호가 맞지 않아요')}
-      ACC={key,id:acc.id||id};lsSet(SESSION_KEY,{key,id:ACC.id,h});$('#aPw').value='';
-      await loadAccountGame();
+      const r=await Store.login(key,h);
+      if(!r){authBusy(false);return msg('아이디 또는 비밀번호가 맞지 않아요')}
+      ACC={key,id:r.id||id,h};lsSet(SESSION_KEY,{key,id:ACC.id,h});$('#aPw').value='';
+      await loadAccountGame(r.rec);
     }
-  }catch(e){console.warn(e);authBusy(false);msg(e?.code==='quota_exceeded'?'저장 공간이 가득 차서 계정을 만들 수 없어요':'저장소에 연결하지 못했어요. 잠시 후 다시 시도해 주세요')}
+  }catch(e){console.warn(e);authBusy(false);msg(e?.code==='quota_exceeded'?'저장 공간이 가득 차서 계정을 만들 수 없어요':e?.message==='invalid_input'||/invalid_input/.test(e?.message||'')?'아이디나 비밀번호 형식을 확인해 주세요':'저장소에 연결하지 못했어요. 잠시 후 다시 시도해 주세요')}
 }
-async function loadAccountGame(){
-  const rec=await Store.getSave(ACC.key);
+async function loadAccountGame(rec){
   SL=rec?{cur:rec.cur,slots:rec.slots.slice()}:{cur:0,slots:[]};
   let st=null;try{st=SL.slots.length?prepState(JSON.parse(SL.slots[SL.cur])):null}catch(e){st=null}
   lastSaved=rec?.at||0;saveErr=null;dirty=false;
@@ -2273,8 +2308,8 @@ initStore();
   if(sess&&sess.key){
     authBusy(true,'불러오는 중…');
     try{
-      await dbReady;const acc=await Store.getAccount(sess.key);
-      if(acc&&acc.h===sess.h){ACC={key:sess.key,id:acc.id||sess.id};await loadAccountGame();return}
+      await dbReady;const r=await Store.login(sess.key,sess.h);
+      if(r){ACC={key:sess.key,id:r.id||sess.id,h:sess.h};await loadAccountGame(r.rec);return}
     }catch(e){console.warn(e)}
     authBusy(false);
   }
