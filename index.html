@@ -585,6 +585,7 @@ const PATCH_NOTES=[
       '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
       '굴뚝 아마 있겠쥐(호박씨 3개): 별 · 잎 · 빨간 열매 가랜드에 빨강 · 초록 전구가 번갈아 반짝여요.',
       '하이, 산타 커튼의 가랜드가 조금 작아져서 창문 위에 세 번 늘어져요.',
+      '쮜리스마스 트리가 둥글게 겹친 3단 트리로 새로 단장했어요. 선물은 오른쪽에 작게 겹쳐 쌓았어요.',
     ]],
     ['🔧 바뀐 점',[
       '창문이 두 개가 됐어요. 양옆 여백과 창문 사이 간격이 같게, 벽 가운데 높이에 걸려 있어요.',
@@ -632,7 +633,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121711';
+const APP_VERSION='202611121719';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1959,7 +1960,7 @@ const FURN=[
   {id:'blind',cat:'curtain',name:'블라인드',price:1,desc:'창문을 가리는 블라인드'},
   {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 세 번 늘어지게 거는 크리스마스 가랜드',xmas:true},
   {id:'wheel',cat:'wheel',name:'운동해야쥐',price:5,func:true,desc:'투명한 바퀴 + 아이보리·파스텔 틀의 쳇바퀴. 🏋️ 기능: 케이지에서 누르면 쥐 몸무게 -1g (쥐마다 하루 3번)'},
-  {id:'xmastree',cat:'wheel',name:'쮜리스마스 트리',price:5,cur:'seed',func:true,desc:'꼭대기엔 별, 가운데엔 오너먼트와 아주 작은 쥐 인형, 밑동엔 선물 2개. 🏋️ 기능: 케이지에서 누르면 쥐 몸무게 -1g (쥐마다 하루 3번)',xmas:true},
+  {id:'xmastree',cat:'wheel',name:'쮜리스마스 트리',price:5,cur:'seed',func:true,desc:'통통한 별과 꼬마 전구, 가운데엔 아주 작은 쥐 인형, 오른쪽엔 겹쳐 쌓은 작은 선물 2개. 🏋️ 기능: 케이지에서 누르면 쥐 몸무게 -1g (쥐마다 하루 3번)',xmas:true},
 ];
 const furnCur=f=>f.cur==='seed'?'seed':'apple';   // 가구 값: 기본은 사과 조각, cur:'seed'면 호박씨
 const FCOLORS={
@@ -2148,31 +2149,49 @@ function wheelURL(){return artURL('wheel',28,33,()=>{
   return[Fr,Wl,Hb];   // 틀은 투명 바퀴 뒤, 중심 축은 맨 앞
 })}
 
-/* ---------- 쮜리스마스 트리 (28×35칸) ---------- */
-function treeURL(){return artURL('xmastree2',28,35,()=>{
-  const T=pixArt(28,35),g='#3F8044',G='#5AA055',L='#7CC06A';
-  const tier=(y0,y1,w0,w1)=>{for(let y=y0;y<=y1;y++){const w=Math.round(w0+(w1-w0)*(y-y0)/(y1-y0)),x0=14-Math.floor(w/2);
-    for(let i=0;i<w;i++)T.set(x0+i,y,i<2?L:i>w-3?g:G)}};
-  tier(5,12,3,11);tier(10,19,7,17);tier(16,27,11,23);
-  T.rect(12,28,4,6,'#8B5A2B');T.rect(12,28,1,6,'#A66E3A');   // 밑동을 바닥(맨 아래 줄)까지
+/* ---------- 쮜리스마스 트리 (29×35칸) ----------
+   둥글게 겹친 3단 · 단마다 아래 그늘 · 얼룩덜룩 초록 · 꼬마 전구 · 통통한 별 · 가운데 아주 작은 쥐 인형
+   선물은 오른쪽에 작게 몰아서, 밑동을 살짝 가리며 겹쳐 놓아요 */
+function treeURL(){return artURL('xmastree6',29,35,()=>{
+  const cx=14,R=rng(11),Lg='#93CC7E',Md='#6FB065',Dk='#529457',Sh='#3D7848',bump='#4A8A50';
+  const T=pixArt(29,35),mask={};
+  const tier=(y0,y1,h0,h1,ease)=>{   // 단마다 윗단보다 2칸 좁게 시작해서 층층이 보이게 (맨 윗단은 둥글게)
+    for(let y=y0;y<=y1;y++){const t=(y-y0)/(y1-y0),hw=Math.round(h0+(h1-h0)*(ease?Math.sqrt(t):t));
+      for(let x=cx-hw;x<=cx+hw;x++){const u=(x-(cx-hw))/(2*hw||1);let lv=u<.3?0:u>.72?2:1;
+        const r=R();if(r<.18)lv=Math.max(0,lv-1);else if(r>.82)lv=Math.min(2,lv+1);
+        T.set(x,y,[Lg,Md,Dk][lv]);mask[x+','+y]=1}}
+    return{y1,hw:h1}};
+  const t3=tier(21,29,5,12),t2=tier(13,20,3,9),t1=tier(4,12,1,6,true);   // 아랫단부터 그리고 윗단을 덮어요
+  // 윗단 아래: 아랫단에 그늘 한 줄 + 동글동글 레이스(볼록)
+  [[t1,t2],[t2,t3]].forEach(([up])=>{const y=up.y1+1;
+    for(let x=cx-up.hw-1;x<=cx+up.hw+1;x++)if(mask[x+','+y])T.set(x,y,Sh);
+    for(let x=cx-up.hw;x<=cx+up.hw;x++)if((x-(cx-up.hw))%4===1||(x-(cx-up.hw))%4===2)T.set(x,y,bump)});
+  {const y=t3.y1;for(let x=cx-t3.hw;x<=cx+t3.hw;x++)if((x-(cx-t3.hw))%4===0)T.set(x,y,null)}   // 맨 아랫단 끝도 물결
+  T.rect(12,30,5,4,'#9A6236');T.rect(12,30,1,4,'#B67A49');T.rect(16,30,1,4,'#7C4A28');T.rect(12,30,5,1,'#5E3A1F');   // 밑동 (윗줄은 단 그늘)
   T.outline();
-  const D=pixArt(28,35);   // 오너먼트
-  [[11,10,'#E0484F'],[16,13,'#F2C14E'],[8,16,'#8FC3E8'],[19,17,'#E0484F'],[21,22,'#F2C14E'],[7,24,'#F2C14E'],[19,25,'#8FC3E8'],[12,25,'#E0484F']]
-    .forEach(([x,y,c])=>{D.rect(x,y,2,2,c);D.set(x,y,'rgba(255,255,255,.85)')});
-  const M=pixArt(28,35),mb='#D8D2C8',ms='#B9B2A6',mp='#F4A9B8';   // 가운데 아주 작은 쥐 인형
-  M.set(14,18,mp);M.rect(12,19,5,1,mb);M.rect(11,20,6,1,mb);M.rect(12,21,4,1,ms);M.set(15,19,INK);M.set(17,20,mp);M.set(10,21,mp);M.set(9,20,mp);
+  // 꼬마 전구 (노랑 · 빨강) · 동그란 오너먼트
+  const D=pixArt(29,35),Y='#FFE08A',Rd='#E25B5B';
+  [[13,7,Y],[16,9,Rd],[11,11,Y],[15,12,Y],[9,15,Rd],[13,14,Y],[18,15,Y],[16,18,Rd],[11,19,Y],[10,22,Y],[18,22,Rd],[8,24,Rd],[19,24,Y],[13,27,Y],[5,27,Y],[16,26,Rd],[23,27,Y],[10,28,Rd]]
+    .forEach(([x,y,c])=>{if(mask[x+','+y])D.set(x,y,c)});                // 나무 위에만
+  [[19,11,'#9CCBEA'],[8,17,'#F4A9B8'],[19,18,'#F2C14E'],[20,25,'#9CCBEA'],[7,26,'#F4A9B8']]
+    .forEach(([x,y,c])=>{if([[0,0],[1,0],[0,1],[1,1]].every(([a,b])=>mask[(x+a)+','+(y+b)])){D.rect(x,y,2,2,c);D.set(x,y,'rgba(255,255,255,.9)')}});
+  // 가운데 아주 작은 쥐 인형 (금줄에 매달림)
+  const Str=pixArt(29,35);Str.set(14,20,'#F2C14E');Str.set(14,21,'#F2C14E');
+  const M=pixArt(29,35),mb='#D8D2C8',ms='#B9B2A6',mp='#F4A9B8',dy=3;
+  M.set(14,19+dy,mp);M.rect(12,20+dy,5,1,mb);M.rect(11,21+dy,6,1,mb);M.rect(12,22+dy,4,1,ms);M.set(15,20+dy,INK);M.set(17,21+dy,mp);M.set(10,22+dy,mp);M.set(9,21+dy,mp);
   M.outline();
-  const Str=pixArt(28,35);Str.set(14,17,'#F2C14E');   // 쥐 인형을 매단 금줄
-  const St=pixArt(28,35),s='#F2C14E';   // 꼭대기 별
-  St.set(14,1,s);St.rect(13,2,3,1,s);St.rect(11,3,7,1,s);St.rect(12,4,5,1,s);St.set(12,5,s);St.set(16,5,s);St.set(14,3,'#FFE89A');St.outline();
-  const P=pixArt(28,35);   // 밑동 선물 2개
-  // 선물은 밑동 왼쪽 · 오른쪽에 딱 붙여 바닥에 놓아요
-  P.rect(4,28,7,6,'#E0484F');P.rect(7,28,1,6,'#F2C14E');P.rect(4,30,7,1,'#F2C14E');P.set(6,27,'#F2C14E');P.set(8,27,'#F2C14E');
-  P.rect(17,29,7,5,'#8FC3E8');P.rect(20,29,1,5,'#F7A8B8');P.rect(17,31,7,1,'#F7A8B8');P.set(19,28,'#F7A8B8');P.set(21,28,'#F7A8B8');
-  P.outline();
-  return[T,D,Str,M,St,P];
+  // 통통한 별 (꼭대기)
+  const St=pixArt(29,35),s1='#F7CD4E',s2='#FFE9A0',s3='#E3A93C';
+  St.set(14,0,s1);St.rect(13,1,3,1,s1);St.rect(11,2,7,1,s1);St.rect(12,3,5,1,s1);St.rect(12,4,2,1,s3);St.rect(15,4,2,1,s3);
+  St.set(13,2,s2);St.set(14,1,s2);St.set(14,3,s3);St.outline();
+  // 선물: 오른쪽에 작게 · 밑동을 살짝 가리며 겹쳐서
+  const G1=pixArt(29,35);   // 뒤쪽 큰 선물 (분홍 + 하얀 리본)
+  G1.rect(15,29,6,5,'#F2A7B5');G1.rect(15,29,6,1,'#F7C4CE');G1.rect(17,29,1,5,'#FFFFFF');G1.rect(15,31,6,1,'#FFFFFF');G1.set(16,28,'#FFFFFF');G1.set(18,28,'#FFFFFF');G1.outline();
+  const G2=pixArt(29,35);   // 앞쪽 작은 선물 (민트 + 빨간 리본)
+  G2.rect(20,31,4,3,'#A9DCC6');G2.rect(20,31,4,1,'#C7EBDB');G2.rect(21,31,1,3,'#E25B5B');G2.set(21,30,'#E25B5B');G2.set(22,30,'#E25B5B');G2.outline();
+  return[T,D,Str,M,St,G1,G2];
 })}
-const SPOT_OBJ={wheel:{url:()=>wheelURL(),w:28,h:33},xmastree:{url:()=>treeURL(),w:28,h:35}};   // 쳇바퀴 자리에 놓는 물건
+const SPOT_OBJ={wheel:{url:()=>wheelURL(),w:28,h:33},xmastree:{url:()=>treeURL(),w:29,h:35}};   // 쳇바퀴 자리에 놓는 물건
 
 /* ---------- 쳇바퀴 자리 물건 누르기: 운동 (쥐마다 하루 3번, 몸무게 -1g) ---------- */
 const GYM_PER_DAY=3;
