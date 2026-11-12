@@ -1773,8 +1773,8 @@ function tileSawdust(){return tile('sawdust',24,16,P=>{
   P(0,0,'#F3E4C0',24,16);const R=rng(7),cols=['#E6CF9C','#DCC08A','#FFF6DE','#EAD7AB','#D3B47B'];
   for(let k=0;k<34;k++){const x=Math.floor(R()*24),y=Math.floor(R()*16),c=cols[Math.floor(R()*cols.length)],t=R();
     t<.45?P(x,y,c,2,1):t<.75?P(x,y,c,1,1):P(x,y,c,1,2)}})}
-function tileCarpet(){return tile('carpet3',24,24,P=>{   // 차분한 와인빛 타탄 체크 (가로 · 세로 줄을 사선으로 엮은 직물 느낌)
-  const L='#7A1C2A',D='#4A111B',M='#58141F',B='#6A1522';   // 가는 밝은 줄 · 어두운 띠 · 중간 · 밝은 칸
+function tileCarpet(){return tile('carpet4',24,24,P=>{   // 차분한 와인빛 타탄 체크 (가로 · 세로 줄을 사선으로 엮은 직물 느낌)
+  const L='#A0404C',D='#6E2532',M='#7C2B38',B='#90343F';   // 가는 밝은 줄 · 어두운 띠 · 중간 · 밝은 칸 (쥐가 잘 보이게 조금 밝게)
   const sett=[L,D,D,D,D,B,B,B,B,B,D,B,B,B,B,B,D,D,D,D,M,M,M,M];
   for(let y=0;y<24;y++)for(let x=0;x<24;x++){
     let c=sett[x]===sett[y]?sett[x]:mix(sett[x],sett[y],.5);   // 같은 색끼리 겹치면 또렷한 칸, 다르면 반반 섞인 색
@@ -1792,10 +1792,10 @@ function floorCSS(id,T){
 function tileModern(){return tile('modern',8,28,P=>{
   P(0,0,'#C99A6B',8,28);P(0,0,'#DDB283',1,28);P(7,0,'#A87A4E',1,28);P(3,9,'#B98B5E',1,4);P(5,18,'#B98B5E',1,5);
   P(0,0,'#D6A877',8,1);P(0,1,'#B78653',8,2);P(0,3,'#946638',8,1)})}
-function tileMerry(){return tile('merry5',32,40,P=>{   // 깔끔한 베이지 바탕 + 초록 트리 + 눈꽃으로 이어진 사선 격자
+function tileMerry(){return tile('merry6',32,40,P=>{   // 깔끔한 베이지 바탕 + 초록 트리 + 눈꽃으로 이어진 사선 격자
   const W=32,H=40,bg='#ECE5D4';
   P(0,0,bg,W,H);
-  const g=(x,y)=>((x+y)&1)?'#4D6A51':'#587A5C';   // 살짝 뜨개 질감이 나는 초록
+  const g=(x,y)=>((x+y)&1)?'#6F8C72':'#789579';   // 원색과 파스텔 사이의 차분한 초록 (살짝 뜨개 질감)
   const put=(x,y)=>{x=((x%W)+W)%W;y=((y%H)+H)%H;P(x,y,g(x,y))};
   // 사선 격자: 눈꽃 꼭짓점 (0,0) · (16,20) 사이를 잇는 선
   for(let t=0;t<=20;t++){const dx=Math.round(t*16/20);put(dx,t);put(-dx,t);put(dx,-t);put(-dx,-t)}
@@ -1877,12 +1877,12 @@ function wheelURL(){return artURL('wheel',28,33,()=>{
 })}
 
 /* ---------- 쮜리스마스 트리 (28×35칸) ---------- */
-function treeURL(){return artURL('xmastree',28,35,()=>{
+function treeURL(){return artURL('xmastree2',28,35,()=>{
   const T=pixArt(28,35),g='#3F8044',G='#5AA055',L='#7CC06A';
   const tier=(y0,y1,w0,w1)=>{for(let y=y0;y<=y1;y++){const w=Math.round(w0+(w1-w0)*(y-y0)/(y1-y0)),x0=14-Math.floor(w/2);
     for(let i=0;i<w;i++)T.set(x0+i,y,i<2?L:i>w-3?g:G)}};
   tier(5,12,3,11);tier(10,19,7,17);tier(16,27,11,23);
-  T.rect(12,28,4,3,'#8B5A2B');T.rect(12,28,1,3,'#A66E3A');
+  T.rect(12,28,4,6,'#8B5A2B');T.rect(12,28,1,6,'#A66E3A');   // 밑동을 바닥(맨 아래 줄)까지
   T.outline();
   const D=pixArt(28,35);   // 오너먼트
   [[11,10,'#E0484F'],[16,13,'#F2C14E'],[8,16,'#8FC3E8'],[19,17,'#E0484F'],[21,22,'#F2C14E'],[7,24,'#F2C14E'],[19,25,'#8FC3E8'],[12,25,'#E0484F']]
@@ -1894,8 +1894,9 @@ function treeURL(){return artURL('xmastree',28,35,()=>{
   const St=pixArt(28,35),s='#F2C14E';   // 꼭대기 별
   St.set(14,1,s);St.rect(13,2,3,1,s);St.rect(11,3,7,1,s);St.rect(12,4,5,1,s);St.set(12,5,s);St.set(16,5,s);St.set(14,3,'#FFE89A');St.outline();
   const P=pixArt(28,35);   // 밑동 선물 2개
-  P.rect(3,28,8,6,'#E0484F');P.rect(6,28,2,6,'#F2C14E');P.rect(3,30,8,1,'#F2C14E');P.set(5,27,'#F2C14E');P.set(8,27,'#F2C14E');
-  P.rect(17,29,8,5,'#8FC3E8');P.rect(20,29,2,5,'#F7A8B8');P.rect(17,31,8,1,'#F7A8B8');P.set(19,28,'#F7A8B8');P.set(22,28,'#F7A8B8');
+  // 선물은 밑동 왼쪽 · 오른쪽에 딱 붙여 바닥에 놓아요
+  P.rect(4,28,7,6,'#E0484F');P.rect(7,28,1,6,'#F2C14E');P.rect(4,30,7,1,'#F2C14E');P.set(6,27,'#F2C14E');P.set(8,27,'#F2C14E');
+  P.rect(17,29,7,5,'#8FC3E8');P.rect(20,29,1,5,'#F7A8B8');P.rect(17,31,7,1,'#F7A8B8');P.set(19,28,'#F7A8B8');P.set(21,28,'#F7A8B8');
   P.outline();
   return[T,D,Str,M,St,P];
 })}
