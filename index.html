@@ -245,10 +245,18 @@ h3{font-size:16px;font-weight:400}
 .nbadge{margin-left:auto;background:var(--pink2);color:#fff;font-size:11px;padding:1px 6px;line-height:1.4}
 #burger{position:relative}
 #burger.has-new:after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--pink2)}
-.patch-card{padding:14px 16px;margin-bottom:14px}
-.patch-card .pdate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.fcat-tabs .pbtn{font-size:14px;padding:7px 4px}
+.patch-card{padding:12px 16px;margin-bottom:14px}
+.patch-card summary,.psec summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none}
+.patch-card summary::-webkit-details-marker,.psec summary::-webkit-details-marker{display:none}
+.patch-card>summary{flex-wrap:wrap}
 .patch-card .pdate b{font-weight:400;font-size:18px}
-.patch-card h4{font-weight:400;font-size:15px;margin:10px 0 4px}
+.patch-card .ptitle{font-size:14px;opacity:.75;flex-basis:100%}
+.patch-card .caret{margin-left:auto;font-size:13px;transition:transform .15s}
+.patch-card[open]>summary .caret,.psec[open]>summary .caret{transform:rotate(180deg)}
+.psec{margin-top:8px}
+.psec summary{font-size:15px;padding:2px 0}
+.psec summary .cnt{font-size:12px;opacity:.6}
 .patch-card ul{margin:0 0 0 20px;font-size:14px;line-height:1.5}
 .patch-card li{margin:2px 0}
 .h3row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
@@ -472,7 +480,8 @@ h3{font-size:16px;font-weight:400}
           <div class="grid" id="shopList"></div>
         </div>
         <div id="shopFurn" class="hidden">
-          <div class="capbar pbox"><img class="px ico lg" data-icon="apple" alt=""><span>보유 사과 조각 <b style="font-weight:400;font-size:18px" id="appleShop">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto">모험 · 일일 퀘스트에서 획득 · 구매하면 바로 적용돼요</span></div>
+          <div class="capbar pbox"><img class="px ico lg" data-icon="apple" alt=""><span>사과 조각 <b style="font-weight:400;font-size:18px" id="appleShop">0</b>개</span><img class="px ico lg" data-icon="seed" alt="" style="margin-left:6px"><span>호박씨 <b style="font-weight:400;font-size:18px" id="seedFurn">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto">구매하면 바로 적용돼요</span></div>
+          <div class="shop-tabs fcat-tabs" id="furnTabs"></div>
           <div id="furnList"></div>
         </div>
       </div>
@@ -539,6 +548,8 @@ const INK='#422F12';
 const PATCH_NOTES=[
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
+      '쮜리스마스 트리(호박씨 5개): 쳇바퀴 자리에 놓는 크리스마스 트리예요. 별 · 오너먼트 · 아주 작은 쥐 인형 · 선물 2개!',
+      '상점 가구에 카테고리 탭(바닥 · 벽지 · 커튼 · 쳇바퀴)이 생겨서 원하는 것만 골라 볼 수 있어요.',
       '설정 메뉴가 생겼어요. 찍찍 소리 켜기 · 끄기와 쿠폰 입력이 여기 있어요.',
       '쿠폰: 받은 코드(영문 대문자)를 설정 > 쿠폰 입력에 넣으면 보상이 들어와요 (케이지마다 한 번).',
       '패치노트 메뉴가 생겼어요. 업데이트가 있으면 메뉴에 NEW 표시가 떠요.',
@@ -553,6 +564,8 @@ const PATCH_NOTES=[
       '새 재화 사과 조각과 상점 가구 탭: 바닥 · 벽지 · 커튼 · 쳇바퀴로 케이지를 꾸밀 수 있어요.',
     ]],
     ['🔧 바뀐 점',[
+      '메리 크리 쥑쥑 벽지가 차분한 크리스마스 줄무늬(빨강 · 금 · 초록 실선)로 바뀌었어요.',
+      '패치노트를 날짜 · 항목별로 접었다 펼 수 있어요.',
       '모험 시간이 2 / 4 / 6시간으로 짧아졌어요.',
       '모험은 한 번에 1마리만 갈 수 있고, 모험 중에는 즉시 완료 · 모험 취소 버튼이 보여요.',
       '모험에서 찍찍 살롱 이용권 대신 사과 조각이 나와요. 모험 퀘스트 보상도 사과 조각이에요.',
@@ -1715,7 +1728,9 @@ const FURN=[
   {id:'blind',cat:'curtain',name:'블라인드',price:1,desc:'창문을 가리는 블라인드'},
   {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 거는 크리스마스 가랜드',xmas:true},
   {id:'wheel',cat:'wheel',name:'운동해야쥐',price:5,desc:'투명한 바퀴 + 아이보리·파스텔 틀의 쳇바퀴'},
+  {id:'xmastree',cat:'wheel',name:'쮜리스마스 트리',price:5,cur:'seed',desc:'꼭대기엔 별, 가운데엔 오너먼트와 아주 작은 쥐 인형, 밑동엔 선물 2개',xmas:true},
 ];
+const furnCur=f=>f.cur==='seed'?'seed':'apple';   // 가구 값: 기본은 사과 조각, cur:'seed'면 호박씨
 const FCOLORS={
   maru:[['원목','#D6B185'],['밝은 원목','#EAD3AE'],['초코','#9C7250'],['체리','#B9705A'],['화이트','#F1ECE1'],['민트','#BFDCCB'],['핑크','#EFC5CB'],['하늘','#C3D9EC']],
   paint:[['벚꽃','#F7DDE2'],['아이보리','#F6F1E1'],['민트','#DCEFE3'],['하늘','#DBE8F5'],['레몬','#F8EFC6'],['라벤더','#E7DEF3'],['살구','#F8E0CC'],['회색','#E4E1DB']],
@@ -1772,17 +1787,15 @@ function floorCSS(id,T){
 function tileModern(){return tile('modern',8,28,P=>{
   P(0,0,'#C99A6B',8,28);P(0,0,'#DDB283',1,28);P(7,0,'#A87A4E',1,28);P(3,9,'#B98B5E',1,4);P(5,18,'#B98B5E',1,5);
   P(0,0,'#D6A877',8,1);P(0,1,'#B78653',8,2);P(0,3,'#946638',8,1)})}
-function tileMerry(){return tile('merry',24,24,P=>{
-  P(0,0,'#F7E6CF',24,24);P(0,0,'#D9645E',4,24);P(1,0,'#E27C72',1,24);P(4,0,'#E9C46A',1,24);
-  const g='#4E8F4A',G='#6DB35A';   // 작은 트리
-  P(14,3,'#F2C14E');P(14,4,g);P(13,5,g,3,1);P(14,5,G);P(12,6,g,5,1);P(13,7,g,3,1);P(11,8,g,7,1);P(13,8,G);P(15,8,'#E0484F');P(14,9,'#9C7250',1,2);
-  P(9,16,'#FFFFFF');P(8,17,'#FFFFFF',3,1);P(9,18,'#FFFFFF');            // 눈송이
-  P(19,15,'#E0484F',2,2);P(19,14,'#6DB35A');                              // 열매
-  P(16,20,'#FFFFFF');P(21,4,'#FFFFFF');P(7,10,'#F2C14E')})}
+function tileMerry(){return tile('merry3',24,16,P=>{   // 따뜻한 크림 바탕 + 넉넉한 간격의 빨강 · 금 · 초록 실선
+  P(0,0,'#F7E6CF',24,16);
+  P(0,0,'#C9534F',2,16);P(1,0,'#D86A63',1,16);   // 빨간 줄
+  P(4,0,'#E2B95A',1,16);                         // 금색 실선
+  P(14,0,'#7FA877',1,16)})}                      // 초록 실선
 function wallCSS(id,T){
   if(id==='paint')return`background:${S.deco.color.paint}`;
   if(id==='modern')return`background:url(${tileModern()}) left 0 bottom var(--floor,0px)/${8*T}px ${28*T}px repeat-x,#FBF6E9`;
-  if(id==='merry')return`background:url(${tileMerry()}) 0 0/${24*T}px ${24*T}px repeat,#F7E6CF`;
+  if(id==='merry')return`background:url(${tileMerry()}) 0 0/${24*T}px ${16*T}px repeat,#F7E6CF`;
   return'';
 }
 /* ---------- 창문 + 커튼 (40×31칸, 창문은 x3~36 · y2~27) ---------- */
@@ -1844,6 +1857,31 @@ function wheelURL(){return artURL('wheel',28,33,()=>{
   return[Fr,Wl,Hb];   // 틀은 투명 바퀴 뒤, 중심 축은 맨 앞
 })}
 
+/* ---------- 쮜리스마스 트리 (28×35칸) ---------- */
+function treeURL(){return artURL('xmastree',28,35,()=>{
+  const T=pixArt(28,35),g='#3F8044',G='#5AA055',L='#7CC06A';
+  const tier=(y0,y1,w0,w1)=>{for(let y=y0;y<=y1;y++){const w=Math.round(w0+(w1-w0)*(y-y0)/(y1-y0)),x0=14-Math.floor(w/2);
+    for(let i=0;i<w;i++)T.set(x0+i,y,i<2?L:i>w-3?g:G)}};
+  tier(5,12,3,11);tier(10,19,7,17);tier(16,27,11,23);
+  T.rect(12,28,4,3,'#8B5A2B');T.rect(12,28,1,3,'#A66E3A');
+  T.outline();
+  const D=pixArt(28,35);   // 오너먼트
+  [[11,10,'#E0484F'],[16,13,'#F2C14E'],[8,16,'#8FC3E8'],[19,17,'#E0484F'],[21,22,'#F2C14E'],[7,24,'#F2C14E'],[19,25,'#8FC3E8'],[12,25,'#E0484F']]
+    .forEach(([x,y,c])=>{D.rect(x,y,2,2,c);D.set(x,y,'rgba(255,255,255,.85)')});
+  const M=pixArt(28,35),mb='#D8D2C8',ms='#B9B2A6',mp='#F4A9B8';   // 가운데 아주 작은 쥐 인형
+  M.set(14,18,mp);M.rect(12,19,5,1,mb);M.rect(11,20,6,1,mb);M.rect(12,21,4,1,ms);M.set(15,19,INK);M.set(17,20,mp);M.set(10,21,mp);M.set(9,20,mp);
+  M.outline();
+  const Str=pixArt(28,35);Str.set(14,17,'#F2C14E');   // 쥐 인형을 매단 금줄
+  const St=pixArt(28,35),s='#F2C14E';   // 꼭대기 별
+  St.set(14,1,s);St.rect(13,2,3,1,s);St.rect(11,3,7,1,s);St.rect(12,4,5,1,s);St.set(12,5,s);St.set(16,5,s);St.set(14,3,'#FFE89A');St.outline();
+  const P=pixArt(28,35);   // 밑동 선물 2개
+  P.rect(3,28,8,6,'#E0484F');P.rect(6,28,2,6,'#F2C14E');P.rect(3,30,8,1,'#F2C14E');P.set(5,27,'#F2C14E');P.set(8,27,'#F2C14E');
+  P.rect(17,29,8,5,'#8FC3E8');P.rect(20,29,2,5,'#F7A8B8');P.rect(17,31,8,1,'#F7A8B8');P.set(19,28,'#F7A8B8');P.set(22,28,'#F7A8B8');
+  P.outline();
+  return[T,D,Str,M,St,P];
+})}
+const SPOT_OBJ={wheel:{url:()=>wheelURL(),w:28,h:33},xmastree:{url:()=>treeURL(),w:28,h:35}};   // 쳇바퀴 자리에 놓는 물건
+
 /* ---------- 케이지에 적용 ---------- */
 const decoT=()=>Math.max(2,Math.round(pxScale*.6));
 function applyDeco(){
@@ -1852,10 +1890,10 @@ function applyDeco(){
   fl.className='deco-floor'+(on.floor?'':' def');fl.style.cssText=floorCSS(on.floor,T);
   wl.style.cssText=wallCSS(on.wall,T);
   const wc=$('#winImg'),wu=windowURL(on.curtain);if(wc.getAttribute('src')!==wu)wc.src=wu;
-  const wh=$('#decoWheel');wh.classList.toggle('hidden',!on.wheel);
-  if(on.wheel){
-    if(wh.getAttribute('src')!==wheelURL())wh.src=wheelURL();
-    const sc=pxScale,ww=28*T;wh.style.width=ww+'px';wh.style.height=33*T+'px';
+  const wh=$('#decoWheel'),obj=SPOT_OBJ[on.wheel];wh.classList.toggle('hidden',!obj);
+  if(obj){
+    const u=obj.url();if(wh.getAttribute('src')!==u)wh.src=u;
+    const sc=pxScale,ww=obj.w*T;wh.style.width=ww+'px';wh.style.height=obj.h*T+'px';
     wh.style.left=Math.round(Math.max(6,stageW()*.17-ww/2))+'px';
     wh.style.bottom=Math.round(G.B+G.D+4*sc-T)+'px';
   }
@@ -1867,20 +1905,27 @@ function furnPreview(f){
   if(f.cat==='floor')return`<div class="fprev" style="${floorCSS(f.id,2)||''};box-shadow:none"></div>`;
   if(f.cat==='wall')return`<div class="fprev" style="--floor:0px;${wallCSS(f.id,2)}"></div>`;
   if(f.cat==='curtain')return`<div class="fprev" style="display:flex;align-items:center;justify-content:center;background:#F6F1E1"><img class="px" src="${windowURL(f.id)}" style="width:60px;height:46.5px" alt=""></div>`;
-  return`<div class="fprev" style="display:flex;align-items:flex-end;justify-content:center;background:#F6F1E1"><img class="px" src="${wheelURL()}" style="width:42px;height:49.5px" alt=""></div>`;
+  const o=SPOT_OBJ[f.id];
+  return`<div class="fprev" style="display:flex;align-items:flex-end;justify-content:center;background:#F6F1E1"><img class="px" src="${o.url()}" style="width:${o.w*1.5}px;height:${o.h*1.5}px" alt=""></div>`;
 }
 function furnCard(f){
   const own=!!S.deco.own[f.id],on=S.deco.on[f.cat]===f.id;
   const sw=f.color?`<div class="fsw">${FCOLORS[f.id].map(([n,c])=>`<button class="sw ${S.deco.color[f.id]===c?'on':''}" style="background:${c}" title="${n}" data-fcol="${f.id}" data-c="${c}"></button>`).join('')}
     <input type="color" class="fpick" data-fpick="${f.id}" value="${S.deco.color[f.id].toLowerCase()}" title="직접 고르기"></div>`:'';
-  const btn=!own?`<button class="pbtn butter" data-fbuy="${f.id}" ${S.apples<f.price?'disabled':''}>구매</button>`
+  const cur=furnCur(f),have=cur==='seed'?S.seeds:S.apples;
+  const btn=!own?`<button class="pbtn butter" data-fbuy="${f.id}" ${have<f.price?'disabled':''}>구매</button>`
     :on?`<span style="display:flex;align-items:center"><span class="chip" style="background:var(--mint)">적용 중</span><button class="pbtn sm" data-foff="${f.cat}">해제</button></span>`
     :`<button class="pbtn pink" data-fon="${f.id}">적용</button>`;
   return`<div class="card pbox"><div class="top">${furnPreview(f)}<div style="min-width:0"><div class="nm">${f.name}${f.xmas?' <span class="chip">🎄</span>':''}</div><div class="ds">${f.desc}</div></div></div>
-    ${sw}<div class="bottom"><span class="price">${ico('apple')}${own?'<span class="muted" style="font-size:13px">보유 중</span>':f.price}</span>${btn}</div></div>`;
+    ${sw}<div class="bottom"><span class="price">${ico(cur)}${own?'<span class="muted" style="font-size:13px">보유 중</span>':f.price}</span>${btn}</div></div>`;
 }
+let furnCat='floor';
 function renderFurn(){
-  $('#furnList').innerHTML=FCAT.map(([cat,label,em])=>`<h3 class="fcat">${em} ${label}</h3><div class="grid">${FURN.filter(f=>f.cat===cat).map(furnCard).join('')}</div>`).join('');
+  $('#furnTabs').innerHTML=FCAT.map(([cat,label,em])=>`<button class="pbtn ${cat===furnCat?'on':''}" data-fcat="${cat}">${em} ${label}</button>`).join('');
+  $('#furnTabs').onclick=e=>{const b=e.target.closest('[data-fcat]');if(b&&b.dataset.fcat!==furnCat){furnCat=b.dataset.fcat;renderFurn()}};
+  $('#seedFurn').textContent=S.seeds;
+  $('#furnList').innerHTML=`<div class="grid">${FURN.filter(f=>f.cat===furnCat).map(furnCard).join('')}</div>`+
+    (furnCat==='wheel'?'<p class="note" style="margin-top:10px">쳇바퀴 자리에는 하나만 놓을 수 있어요. 다른 걸 적용하면 바뀌어요.</p>':'');
   const L=$('#furnList');
   L.onclick=e=>{const t=e.target.closest('[data-fbuy],[data-fon],[data-foff],[data-fcol]');if(!t)return;
     if(t.dataset.fbuy)buyFurn(t.dataset.fbuy);
@@ -1893,8 +1938,10 @@ function renderFurn(){
 }
 function buyFurn(id){
   const f=FURN.find(x=>x.id===id);if(!f||S.deco.own[id])return;
-  if(S.apples<f.price){toast(`사과 조각이 부족해요! (필요 ${f.price}개)`);return}
-  S.apples-=f.price;S.deco.own[id]=true;S.deco.on[f.cat]=id;save();renderAll();
+  const cur=furnCur(f);
+  if((cur==='seed'?S.seeds:S.apples)<f.price){toast(`${gName(cur)}${jo(gName(cur),'이')} 부족해요! (필요 ${f.price}개)`);return}
+  if(cur==='seed')S.seeds-=f.price;else S.apples-=f.price;
+  S.deco.own[id]=true;S.deco.on[f.cat]=id;save();renderAll();
   toast(`🛋 ${f.name} 구매 완료! 케이지에 바로 적용했어요`);
 }
 
@@ -2129,10 +2176,12 @@ function updatePatchBadge(){
 }
 function renderPatch(){
   const fmt=d=>{const[y,m,dd]=d.split('-');return`${y}년 ${+m}월 ${+dd}일`};
-  $('#patchBody').innerHTML=PATCH_NOTES.map((p,i)=>`<div class="patch-card pbox">
-    <div class="pdate"><b>${fmt(p.date)}</b>${i===0?'<span class="chip" style="background:var(--pink)">최신</span>':''}</div>
-    ${p.title?`<div style="font-size:15px">${esc(p.title)}</div>`:''}
-    ${p.sections.map(([h,items])=>`<h4>${h}</h4><ul>${items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`).join('')}</div>`).join('');
+  // 날짜 카드와 그 안의 항목 묶음을 각각 접었다 펼 수 있어요 (최신 날짜만 펼친 채로 시작)
+  $('#patchBody').innerHTML=`<p class="note" style="margin:0 2px 10px">날짜나 항목 제목을 누르면 접었다 펼 수 있어요.</p>`+PATCH_NOTES.map((p,i)=>`<details class="patch-card pbox" ${i===0?'open':''}>
+    <summary><span class="pdate"><b>${fmt(p.date)}</b></span>${i===0?'<span class="chip" style="background:var(--pink)">최신</span>':''}<span class="caret">▾</span>
+      ${p.title?`<span class="ptitle">${esc(p.title)}</span>`:''}</summary>
+    ${p.sections.map(([h,items])=>`<details class="psec" open><summary>${h} <span class="cnt">${items.length}</span><span class="caret">▾</span></summary>
+      <ul>${items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`).join('')}</details>`).join('');
   if(lsGet(PATCH_SEEN_KEY)!==latestPatch())lsSet(PATCH_SEEN_KEY,latestPatch());
 }
 
