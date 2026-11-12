@@ -157,7 +157,16 @@ h3{font-size:16px;font-weight:400}
 .mouse-inner.walking canvas{animation:bob .22s steps(1) infinite}
 .mouse-inner.tussle canvas{animation:tussle .3s steps(1) infinite}
 @keyframes tussle{0%{transform:translate(0,0)}50%{transform:translate(0,-4px)}}
-.mouse-wrap canvas{cursor:pointer;touch-action:manipulation;display:block}
+.mouse-wrap canvas{cursor:grab;touch-action:none;display:block}
+/* 쥐 들기: 들려 있는 동안 맨 앞 · 그림자 숨김 · 등(위쪽)을 축으로 흔들 */
+.mouse-wrap.held{z-index:55!important}
+.mouse-wrap.held .shadow,.mouse-wrap.held .sel-mark,.mouse-wrap.held .stink{display:none!important}
+.mouse-wrap.held .mouse-inner{transform-origin:50% 8%}
+.mouse-inner.hold-calm{animation:holdSway 2.6s ease-in-out infinite}
+.mouse-inner.hold-kick{animation:holdKick .3s steps(1) infinite}
+@keyframes holdSway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes holdKick{0%{transform:rotate(-5deg) translateX(-1px)}50%{transform:rotate(5deg) translateX(1px)}}
+body.grabbing,body.grabbing *{cursor:grabbing!important}
 .sel-mark{display:none;position:absolute;left:var(--hx,60%);bottom:calc(100% + 5px);width:12px;height:8px;margin-left:-6px;background:var(--pink2);
   clip-path:polygon(0 0,100% 0,50% 100%);animation:markbob .9s steps(1) infinite;pointer-events:none}
 .mouse-wrap.sel .sel-mark{display:block}
@@ -556,6 +565,13 @@ h3{font-size:16px;font-weight:400}
 const INK='#422F12';
 /* 패치노트 — 새 업데이트는 맨 위에 추가해요 (날짜: YYYY-MM-DD) */
 const PATCH_NOTES=[
+  {date:'2026-11-13',title:'쥐를 들어서 옮겨요',sections:[
+    ['🆕 새 기능',[
+      '쥐를 누른 채로 끌면(또는 꾹 누르고 있으면) 쥐를 들어서 원하는 곳으로 옮길 수 있어요. 손을 놓으면 바닥으로 톡 내려와요.',
+      '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
+      '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+    ]],
+  ]},
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
       '프로필 > 내 케이지에서 케이지를 삭제할 수 있어요. 지우기 전에 한 번 더 물어봐요.',
@@ -596,7 +612,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121159';
+const APP_VERSION='202611121538';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -897,8 +913,31 @@ const setPx=(t,list)=>{const o=t.slice();list.forEach(([r,c,ch])=>{o[r]=o[r].sli
 const ARM_OFF=[[10,15,'.'],[10,16,'.'],[11,16,'.']];
 const TPL_FIGHT_A=setPx(TPL_STAND,[...ARM_OFF,[9,16,'p'],[9,17,'p'],[8,17,'P']]);
 const TPL_FIGHT_B=setPx(TPL_STAND,[...ARM_OFF,[11,16,'p'],[11,17,'p'],[12,16,'P']]);
+/* 들어 올린 자세: 사용자 도트(머리가 왼쪽)를 그대로 옮기고, 다른 자세처럼 머리가 오른쪽을 보도록 좌우 반전해서 써요 */
+const TPL_HOLD_SRC=[
+".........kkkkkkkk.......",
+"........kbbbbbbbsk......",
+".......kbbbbbbbbbsk.....",
+".....kkbbbbbbbbbbbk.....",
+"....kpbbbbbbbbbbbbsk....",
+"...kPkbbbbbbbbbbbbskp...",
+"....kbbbssbbbbbbbsskPp..",
+"....kbbsPpsbbbbbsssk.p..",
+"...kbbbbbbssssssssk..p..",
+"...kbbebbskkkkkkkk...p..",
+"...kbbbskk......P....p..",
+"....kkkk.P.....p.....p..",
+"....................p...",
+"....................p...",
+".....................p..",
+];
+/* 버둥 프레임: 앞발은 앞으로, 뒷발은 뒤로 차요 */
+const TPL_HOLD_KICK_SRC=setPx(TPL_HOLD_SRC,[[11,9,'.'],[10,16,'.'],[11,15,'.'],[11,8,'P'],[10,17,'P'],[11,18,'p']]);
+const mirrorRows=t=>t.map(r=>[...r].reverse().join(''));
+const TPL_HOLD=mirrorRows(TPL_HOLD_SRC),TPL_HOLD_KICK=mirrorRows(TPL_HOLD_KICK_SRC);
 const POSES={lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
-  fightA:{t:TPL_FIGHT_A,row:14,col:9},fightB:{t:TPL_FIGHT_B,row:14,col:9}};
+  fightA:{t:TPL_FIGHT_A,row:14,col:9},fightB:{t:TPL_FIGHT_B,row:14,col:9},
+  hold:{t:TPL_HOLD,row:2,col:11,noNose:true},holdK:{t:TPL_HOLD_KICK,row:2,col:11,noNose:true}};
 const MOUSE_DEFAULT='#32312F';
 function mousePalette(base){
   const l=rgbToHsl(...hexToRgb(base))[2];
@@ -926,9 +965,10 @@ function buildMouse(o={}){
   else if(look){put(ex,ey,'b');put(ex-1,ey,'e')}
   // 코 (씰룩: 코끝이 앞으로 1px 킁킁)
   let nX=nx;
-  if(twitch&&!plush){put(nx,ny,'b');put(nx+1,ny,'n');nX=nx+1}
+  const noNose=plush||PZ.noNose;
+  if(twitch&&!noNose){put(nx,ny,'b');put(nx+1,ny,'n');nX=nx+1}
   // 수염
-  if(!plush){
+  if(!noNose){
     const wp=twitch?[[1,-1],[2,-1],[1,1],[2,1]]:[[1,-1],[2,-2],[1,1],[2,2]];
     wp.forEach(([dx,dy])=>{if(get(nX+dx,ny+dy)==='.')put(nX+dx,ny+dy,'w')});
   }
@@ -1211,12 +1251,83 @@ function ensureSprites(){
       pose:'lie',standUntil:0,twitch:false,burst:0,nextBurst:now+600,breath:false,blink:false,nextBlink:now+2000+Math.random()*2000,
       look:false,nextLook:now+5000+Math.random()*4000,tail:false,twinkle:false,sniffUntil:0,anim:{face:null,until:0},
       faceAs:null,faceUntil:0,foamUntil:0,shineUntil:0,sqT:null,animT:null,stinky:null};
-    r.cv.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();poke(r.i)});
+    bindHold(r);
     RT.push(r);
   }
 }
 const spriteW=r=>r.cv.gw*pxScale, spriteH=r=>r.cv.gh*pxScale;
 const stageW=()=>$('#stage').getBoundingClientRect().width||360;
+const stageH=()=>$('#stage').getBoundingClientRect().height||300;
+
+/* ---------- 쥐 들어 옮기기 (클릭 앤 드래그) ----------
+   짧게 누르면 지금처럼 쓰다듬기, 끌거나 꾹 누르고 있으면 쥐를 들어요.
+   들면 랜덤으로 얌전히 있거나(calm) 발을 버둥거려요(kick). 놓으면 바닥으로 톡 떨어져요. */
+let DRAG=null;
+const HOLD_CALM=['찍...? (어디 가요?)','찍. (높다...)','찌잉~ (흔들흔들)','찍찍. (얌전히 있을게요)','찍? (구경 가요?)'];
+const HOLD_KICK=['찍찍찍!! (내려 줘요!)','찌익! (버둥버둥)','찍!? (높아요 높아!)','찍찍! (발이 안 닿아!)','찌이익! (놔 줘요오)'];
+const LAND_CALM=['찍! (착지!)','찍~ (재밌었다)','찍찍 (여기가 좋아요)'];
+const LAND_KICK=['찍! (휴, 살았다)','찌직! (다신 들지 마요!)','찍... (어지러워)'];
+function bindHold(r){
+  const cv=r.cv;
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();
+    if(!S||!S.mice[r.i]||S.mice[r.i].adv||r.state==='drop'||DRAG)return;
+    try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    DRAG={r,id:e.pointerId,x0:e.clientX,y0:e.clientY,lx:e.clientX,ly:e.clientY,on:false,px:null};
+    DRAG.timer=setTimeout(()=>{if(DRAG&&DRAG.r===r&&!DRAG.on)startHold(DRAG.lx,DRAG.ly)},400);
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!DRAG||DRAG.r!==r||e.pointerId!==DRAG.id)return;
+    DRAG.lx=e.clientX;DRAG.ly=e.clientY;
+    if(!DRAG.on){if(Math.hypot(e.clientX-DRAG.x0,e.clientY-DRAG.y0)>6)startHold(e.clientX,e.clientY);return}
+    moveHold(e.clientX,e.clientY);
+  });
+  const end=e=>{
+    if(!DRAG||DRAG.r!==r||e.pointerId!==DRAG.id)return;
+    const d=DRAG;DRAG=null;clearTimeout(d.timer);
+    if(d.on)dropHold(r);else if(e.type==='pointerup')poke(r.i);
+  };
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);cv.addEventListener('lostpointercapture',end);
+}
+function startHold(cx,cy){
+  const d=DRAG;if(!d||d.on)return;const r=d.r;
+  if(!S||!S.mice[r.i]||S.mice[r.i].adv){DRAG=null;return}
+  d.on=true;clearTimeout(d.timer);
+  if(INT&&(INT.a===r.i||INT.b===r.i))endInteraction(true);
+  clearTimeout(r.animT);r.anim={face:null,until:0};
+  r.inner.classList.remove('walking','jump','happy','boing','shake','rise','tussle');
+  Object.assign(r,{state:'held',moving:false,after:null,goal:null,faceAs:null,standUntil:0,sniffUntil:0,twitch:false,
+    holdMode:Math.random()<.5?'calm':'kick',pose:'hold'});
+  r.inner.classList.add(r.holdMode==='kick'?'hold-kick':'hold-calm');
+  r.el.classList.add('held');document.body.classList.add('grabbing');
+  if(r.i!==S.sel){S.sel=r.i;save();renderAll()}
+  moveHold(cx,cy);
+  const line=pick(r.holdMode==='kick'?HOLD_KICK:HOLD_CALM);squeak(line,r.i);squeakSound(line);
+}
+function moveHold(cx,cy){
+  const d=DRAG;if(!d||!d.on)return;const r=d.r;
+  const sr=$('#stage').getBoundingClientRect(),px=cx-sr.left,py=cy-sr.top;
+  let redraw=d.px===null;
+  if(d.px!==null&&Math.abs(px-d.px)>2){const nd=px>d.px?1:-1;if(nd!==r.dir){r.dir=nd;redraw=true}}   // 끄는 방향을 바라봐요
+  d.px=px;r.hpx=px;r.hpy=py;
+  redraw?drawSprite(r):placeSprite(r);
+  if(!r.sq.classList.contains('hidden'))fitSqueak(r);
+}
+function dropHold(r){
+  document.body.classList.remove('grabbing');
+  r.inner.classList.remove('hold-calm','hold-kick');
+  if(r.state!=='held')return;
+  r.y=clamp(r.hb-G.B,0,G.D);                 // 떨어지는 바로 아래 바닥 (높이 들었으면 케이지 안쪽)
+  r.x=clamp(r.hx,0,Math.max(0,stageW()-spriteW(r)));
+  r.state='drop';r.vy=0;r.dropMode=r.holdMode;r.pose='hold';
+  drawSprite(r);
+}
+function landHold(r){
+  const cx=r.x+spriteW(r)/2;
+  r.el.classList.remove('held');r.state='idle';r.pose='lie';r.holdMode=null;
+  drawSprite(r);r.x=clamp(cx-spriteW(r)/2,4,maxX(r));placeSprite(r);
+  playAnim('boing',r.dropMode==='kick'?null:'happy',r.i);
+  if(Math.random()<.6){const line=pick(r.dropMode==='kick'?LAND_KICK:LAND_CALM);squeak(line,r.i);squeakSound(line)}
+}
 const maxX=r=>Math.max(4,stageW()-spriteW(r)-4);
 function moodFace(r){
   const now=Date.now(),st=S.mice[r.i].stats;
@@ -1237,7 +1348,13 @@ function drawSprite(r){
 function placeSprite(r){
   const sc=pxScale,w=spriteW(r);
   if(r.x===null)r.x=clamp(stageW()/2-w/2+(r.i?w*.6:-w*.35),4,maxX(r));
-  r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(G.B+r.y)+'px';
+  if(r.state==='held'){                                 // 포인터가 쥐 등(위쪽 가운데)을 잡고 있어요
+    const sw=stageW(),sh=stageH(),h=spriteH(r);
+    r.hx=clamp(r.hpx-w/2,0,Math.max(0,sw-w));
+    const top=clamp(r.hpy-h*.15,0,Math.max(0,sh-h-G.B));r.hb=sh-top-h;
+    r.el.style.left=Math.round(r.hx)+'px';r.el.style.bottom=Math.round(r.hb)+'px';
+  }else if(r.state==='drop'){r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(r.hb)+'px'}
+  else{r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(G.B+r.y)+'px'}
   r.el.style.zIndex=10+Math.round(G.D-r.y);              // 앞줄일수록 위에
   r.el.style.setProperty('--hx',(r.dir>0?64:36)+'%');     // 머리 쪽
   const bodyC=(r.dir>0?12:r.cv.gw-13)*sc;
@@ -1346,7 +1463,12 @@ function stageStep(dt){
   const now=Date.now(),home=homeIdx();
   if(INT&&(!home.includes(INT.a)||!home.includes(INT.b)))endInteraction(true);
   for(const i of home){
-    const r=RT[i];if(!r||r.x===null||now<r.anim.until)continue;
+    const r=RT[i];if(!r||r.x===null)continue;
+    if(r.state==='drop'){                               // 놓으면 바닥으로 톡
+      r.vy+=pxScale*520*dt;r.hb-=r.vy*dt;
+      if(r.hb<=G.B+r.y){r.hb=G.B+r.y;landHold(r)}else placeSprite(r);
+      continue}
+    if(r.state==='held'||now<r.anim.until)continue;
     if(r.state==='walk'||r.state==='goto'){
       const dx=r.tx-r.x,dy=r.ty-r.y,dist=Math.hypot(dx,dy),step=r.speed*dt;
       if(dist<=step||dist<.5){
@@ -1398,6 +1520,7 @@ function startInteraction(){
   const home=homeIdx();if(home.length<2)return false;
   const[a,b]=home.slice(0,2).map(i=>RT[i]),now=Date.now();
   if(!a||!b||a.x===null||b.x===null||now<a.anim.until||now<b.anim.until)return false;
+  if([a,b].some(r=>r.state==='held'||r.state==='drop'))return false;
   const sc=pxScale,dislike=relOf()==='dislike';
   const type=dislike?(Math.random()<.45?'nose':'fight'):(Math.random()<.5?'nose':'snug');   // 좋아!: 코인사 · 찰딱 / 싫어!: 신경질 코인사 · 투닥
   const L=a.x<=b.x?a:b,R=L===a?b:a;
@@ -1480,7 +1603,7 @@ function interThought(ctx,ids){
 /* ---------- 애니메이션 / 이펙트 ---------- */
 const ANIM_MS={jump:750,happy:1100,boing:420,shake:520};
 function playAnim(type,face,i=S.sel){
-  const r=RT[i];if(!r)return;
+  const r=RT[i];if(!r||r.state==='held'||r.state==='drop')return;
   const dur=ANIM_MS[type]||800;
   stopMove(r,dur+900+Math.random()*1600);
   r.pose='lie';r.standUntil=0;
@@ -1558,12 +1681,15 @@ function poke(i=S.sel){
   if(type!=='shake')particles(Math.random()<.5?'music':'heart',Math.random()<.5?1:2,i);
   squeakSound(line);
 }
-function squeak(text,i=S.sel){
-  const r=RT[i];if(!S||!r||!S.mice[i]||S.mice[i].adv)return;const b=r.sq;
-  b.textContent=text;b.classList.remove('hidden');b.style.marginLeft='0px';b.style.animation='none';
+/* 말풍선이 케이지 밖으로 잘리지 않게 좌우 위치 맞추기 */
+function fitSqueak(r){const b=r.sq;b.style.marginLeft='0px';
   const sr=$('#stage').getBoundingClientRect(),br=b.getBoundingClientRect();
   if(br.left<sr.left+4)b.style.marginLeft=(sr.left+4-br.left)+'px';
-  else if(br.right>sr.right-4)b.style.marginLeft=(sr.right-4-br.right)+'px';
+  else if(br.right>sr.right-4)b.style.marginLeft=(sr.right-4-br.right)+'px';}
+function squeak(text,i=S.sel){
+  const r=RT[i];if(!S||!r||!S.mice[i]||S.mice[i].adv)return;const b=r.sq;
+  b.textContent=text;b.classList.remove('hidden');b.style.animation='none';
+  fitSqueak(r);
   void b.offsetWidth;b.style.animation='';
   r.el.classList.add('talking');
   clearTimeout(r.sqT);r.sqT=setTimeout(()=>{b.classList.add('hidden');r.el.classList.remove('talking')},1700);
@@ -2376,8 +2502,12 @@ function startLoops(){
       if(now<r.sniffUntil||r.burst>0){r.twitch=!r.twitch;ch=true;if(r.burst>0)r.burst--}
       else if(now>r.nextBurst){r.burst=6+Math.floor(Math.random()*6);r.nextBurst=now+1400+Math.random()*2600}
       else if(r.twitch){r.twitch=false;ch=true}
+      if(r.state==='held'||r.state==='drop'){            // 들려 있는 동안: 버둥이면 발을 번갈아 차요
+        if(r.state==='held'&&r.holdMode==='kick'){r.pose=r.pose==='hold'?'holdK':'hold';ch=true}
+        if(r.holdMode==='kick'&&tick%2===0){r.tail=!r.tail;ch=true}
+      }
       // 서 있는 동안 코를 치켜들었다 내렸다
-      if(r.pose!=='lie'){
+      else if(r.pose!=='lie'){
         if(now>r.standUntil||now<r.anim.until||r.moving){r.pose='lie';ch=true;r.inner.classList.remove('rise')}
         else if(tick%3===0&&r.pose.startsWith('stand')){r.pose=r.pose==='stand'?'stand2':'stand';ch=true}
       }
