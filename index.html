@@ -141,7 +141,14 @@ h3{font-size:16px;font-weight:400}
 .deco-wheel.boing{animation:spotBoing .5s ease-out 1}
 @keyframes spotBoing{0%{transform:scale(1,1)}25%{transform:scale(.9,.84)}55%{transform:scale(1.05,1.1) translateY(-8%)}78%{transform:scale(.98,1.02) translateY(0)}100%{transform:scale(1,1)}}
 .fn-chip{background:var(--sky)!important}
-.stage.away-mode .deco-wall,.stage.away-mode .deco-floor,.stage.away-mode .deco-wheel{display:none}
+.stage.away-mode .deco-wall,.stage.away-mode .deco-floor,.stage.away-mode .deco-wheel,.stage.away-mode .deco-roof{display:none}
+/* 지붕: 케이지 맨 위에 고정 · 벽지 바로 앞, 창문보다 뒤 · 쥐를 가리지 않는 배경 */
+.deco-roof{position:absolute;left:0;right:0;top:0;z-index:1;pointer-events:none;image-rendering:pixelated}
+.deco-roof .lit{position:absolute;inset:0;image-rendering:pixelated;opacity:0}
+.deco-roof .lit.r{animation:roofLitR 1.6s steps(1) infinite}
+.deco-roof .lit.g{animation:roofLitG 1.6s steps(1) infinite}
+@keyframes roofLitR{0%{opacity:1}50%{opacity:0}}
+@keyframes roofLitG{0%{opacity:0}50%{opacity:1}}
 .shop-tabs{display:flex;gap:4px;margin-bottom:10px}
 .shop-tabs .pbtn{flex:1;font-size:16px;padding:9px 8px}
 .shop-tabs .pbtn.on{background:var(--pink)}
@@ -461,6 +468,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
       </div>
       <div class="stage pbox" id="stage">
         <div class="deco-wall" id="decoWall"></div>
+        <div class="deco-roof hidden" id="decoRoof"><div class="lit r"></div><div class="lit g"></div></div>
         <div class="deco-floor def" id="decoFloor"></div>
         <img class="px win-img" id="winImg" alt="">
         <img class="px win-img" id="winImg2" alt="">
@@ -572,6 +580,10 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '상점 가구에 지붕 탭이 생겼어요. 지붕은 케이지 맨 위에 걸리는 배경이라 쥐를 가리지 않아요.',
+      '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
+      '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
+      '굴뚝 아마 있겠쥐(호박씨 3개): 별 · 잎 · 빨간 열매 가랜드에 빨강 · 초록 전구가 번갈아 반짝여요.',
     ]],
     ['🔧 바뀐 점',[
       '창문이 두 개가 됐어요. 양옆 여백과 창문 사이 간격이 같게, 벽 가운데 높이에 걸려 있어요.',
@@ -619,7 +631,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121641';
+const APP_VERSION='202611121701';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1931,7 +1943,7 @@ function claimAllQuests(){
 /* =========================================================
    가구 · 케이지 꾸미기 (사과 조각으로 교환)
 ========================================================= */
-const FCAT=[['floor','바닥','🟫'],['wall','벽지','🧱'],['curtain','커튼','🪟'],['wheel','쳇바퀴','🎡']];
+const FCAT=[['floor','바닥','🟫'],['wall','벽지','🧱'],['roof','지붕','🏠'],['curtain','커튼','🪟'],['wheel','쳇바퀴','🎡']];
 const FURN=[
   {id:'maru',cat:'floor',name:'쥐깍 마루',price:1,desc:'단색 마루바닥 · 색상 선택 가능',color:true},
   {id:'sawdust',cat:'floor',name:'푹신 톱밥',price:3,desc:'톱밥이 부드럽게 흩어진 바닥'},
@@ -1939,6 +1951,9 @@ const FURN=[
   {id:'paint',cat:'wall',name:'쥐깍 페인트',price:1,desc:'단색 벽지 · 색상 선택 가능',color:true},
   {id:'modern',cat:'wall',name:'모던 쥑의 선택',price:2,desc:'위는 밝은 아이보리, 아래는 나무판자 벽'},
   {id:'merry',cat:'wall',name:'메리 크리 쥑쥑',price:3,desc:'깔끔한 베이지 바탕에 빨간 눈꽃 격자 무늬',xmas:true},
+  {id:'jroof',cat:'roof',name:'쥐깍 지붕',price:1,cur:'seed',desc:'세로 골이 진 단색 금속 지붕 · 색상 선택 가능',color:true},
+  {id:'mroof',cat:'roof',name:'모던 지붕',price:1,cur:'seed',desc:'짙은 슬레이트에 하얀 테두리, 나무 처마를 단 깔끔한 지붕'},
+  {id:'garland',cat:'roof',name:'굴뚝 아마 있겠쥐',price:3,cur:'seed',desc:'별이 달린 초록 잎 가랜드에 빨강 · 초록 전구가 번갈아 반짝반짝',xmas:true},
   {id:'sunshine',cat:'curtain',name:'해피 선샤인',price:1,desc:'하얀 커튼'},
   {id:'blind',cat:'curtain',name:'블라인드',price:1,desc:'창문을 가리는 블라인드'},
   {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 거는 크리스마스 가랜드',xmas:true},
@@ -1948,9 +1963,10 @@ const FURN=[
 const furnCur=f=>f.cur==='seed'?'seed':'apple';   // 가구 값: 기본은 사과 조각, cur:'seed'면 호박씨
 const FCOLORS={
   maru:[['원목','#D6B185'],['밝은 원목','#EAD3AE'],['초코','#9C7250'],['체리','#B9705A'],['화이트','#F1ECE1'],['민트','#BFDCCB'],['핑크','#EFC5CB'],['하늘','#C3D9EC']],
+  jroof:[['딸기','#D9787C'],['살구','#DE9668'],['버터','#D6B25A'],['세이지','#84AC7E'],['민트','#6CB0A0'],['하늘','#7CA3CC'],['라벤더','#9F8BC6'],['초코','#9A6E55']],
   paint:[['벚꽃','#F7DDE2'],['아이보리','#F6F1E1'],['민트','#DCEFE3'],['하늘','#DBE8F5'],['레몬','#F8EFC6'],['라벤더','#E7DEF3'],['살구','#F8E0CC'],['회색','#E4E1DB']],
 };
-const defaultDeco=()=>({own:{},on:{floor:null,wall:null,curtain:null,wheel:null},color:{maru:'#D6B185',paint:'#F7DDE2'}});
+const defaultDeco=()=>({own:{},on:{floor:null,wall:null,roof:null,curtain:null,wheel:null},color:{maru:'#D6B185',paint:'#F7DDE2',jroof:'#D9787C'}});
 
 /* ---------- 도트 그리기 도구 ---------- */
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -2025,6 +2041,53 @@ function wallCSS(id,T){
   if(id==='merry')return`background:url(${tileMerry()}) 0 0/${26*T}px ${34*T}px repeat,#ECE5D4`;
   return'';
 }
+/* ---------- 지붕 (케이지 맨 위에 가로로 반복) ---------- */
+function tileJRoof(c){return tile('jroof2'+c,24,12,P=>{   // 세로 골 금속 지붕: 어두운 이음매 · 밝은 골 · 판 (3장 반복)
+  const D=shade(c,-.13),H=shade(c,.09),H2=shade(c,.04),sp=shade(c,-.05),E=shade(c,-.2),E2=shade(c,-.27);
+  P(0,0,c,24,10);
+  for(let k=0;k<3;k++){const x=k*8;P(x,0,D,1,10);P(x+1,0,H,1,10);P(x+2,0,H2,1,10)}
+  [[5,2,3],[13,5,2],[20,1,2],[6,7,2],[22,6,3],[12,1,1]].forEach(([x,y,h])=>P(x,y,sp,1,h));   // 은은한 결
+  P(0,10,E,24,1);P(0,11,E2,24,1);                       // 처마 끝
+})}
+function tileMRoof(){return tile('mroof1',16,12,P=>{   // 슬레이트 · 하얀 테두리 · 나무 처마
+  P(0,0,'#5E646E',16,6);P(0,0,'#747A84',16,1);P(15,1,'#565C66',1,5);
+  P(0,6,'#F3F0E8',16,1);P(0,7,'#DCD7CB',16,1);
+  P(0,8,'#C99A6B',16,3);P(0,8,'#D8AC7E',16,1);[3,7,11,15].forEach(x=>P(x,9,'#B0835A',1,2));
+  P(0,11,'#9C7149',16,1);
+})}
+/* 굴뚝 아마 있겠쥐: 별 · 잎 · 빨간 열매 가랜드 + 전구 (mode: base=꺼진 전구 · r=빨강 켜짐 · g=초록 켜짐 · all) */
+const GAR_W=64,GAR_H=19;
+const garY=x=>4+Math.round(8*Math.sin(Math.PI*(((x%GAR_W)+GAR_W)%GAR_W)/GAR_W));
+const GAR_BULBS=[[10,'r'],[21,'g'],[32,'r'],[43,'g'],[54,'r']];
+function tileGarland(mode='base'){return tile('garland5:'+mode,GAR_W,GAR_H,P=>{
+  const put=(x,y,c)=>P(((x%GAR_W)+GAR_W)%GAR_W,y,c);
+  const RB={r:['#EE4A42','#FFB0A3','#8A3B38'],g:['#4FCB64','#C2F5C9','#3D6A47']};   // 켜짐 · 빛 번짐 · 꺼짐
+  if(mode==='base'){
+    const stem='#6C8757',L1='#A8C38A',L2='#8DAE72',L3='#55745A',berry='#BE3A3E',berryD='#8F2A2E';
+    for(let x=0;x<GAR_W;x++)put(x,garY(x),stem);
+    // 잎: 줄기를 따라 위아래로 번갈아, 바깥쪽 뒤로 비스듬한 통통한 잎 (가끔 짙은 잎)
+    for(let x=3,n=0;x<GAR_W-2;x+=3,n++){const y=garY(x),d=n%2?1:-1,c=n%5===2?L3:(n%3===0?L1:L2),t=c===L3?L3:L1;
+      put(x,y+d,c);put(x-1,y+d,c);put(x-1,y+2*d,c);put(x-2,y+2*d,t);put(x-2,y+3*d,t)}
+    // 빨간 열매 (2~3알씩)
+    [7,27,38,58].forEach((x,k)=>{const y=garY(x)+2;put(x,y,berry);put(x+1,y+1,berryD);if(k%2)put(x-1,y+1,berry)});
+    // 고리 위 금별 (타일 이음매)
+    const st='#E9C46A',sl='#F8E3A6',sd='#C9A043';
+    [[0,0,st],[-1,1,st],[0,1,sl],[1,1,st],[-2,2,st],[-1,2,st],[0,2,sl],[1,2,st],[2,2,st],[-1,3,st],[0,3,st],[1,3,st],[-1,4,sd],[1,4,sd]].forEach(([dx,dy,c])=>put(dx,dy,c));
+    GAR_BULBS.forEach(([x,k])=>{const y=garY(x);put(x,y+1,'#3F4A3A');put(x,y+2,'#55604F');   // 전구 꼭지 · 꺼진 전구
+      put(x,y+3,RB[k][2]);put(x+1,y+3,RB[k][2]);put(x,y+4,RB[k][2]);put(x+1,y+4,RB[k][2]);put(x,y+5,RB[k][2]);put(x+1,y+5,RB[k][2])});
+    return}
+  GAR_BULBS.forEach(([x,k])=>{if(mode!=='all'&&mode!==k)return;const y=garY(x),C=RB[k];
+    [[-1,3],[-1,4],[-1,5],[2,3],[2,4],[2,5],[0,6],[1,6]].forEach(([dx,dy])=>put(x+dx,y+dy,C[1]+'A0'));   // 빛 번짐
+    put(x,y+3,C[0]);put(x+1,y+3,C[0]);put(x,y+4,C[0]);put(x+1,y+4,C[0]);put(x,y+5,C[0]);put(x+1,y+5,C[0]);put(x,y+3,'#FFFFFF')});
+})}
+const ROOF={
+  jroof:{w:24,h:12,url:()=>tileJRoof(S.deco.color.jroof)},
+  mroof:{w:16,h:12,url:()=>tileMRoof()},
+  garland:{w:GAR_W,h:GAR_H,url:()=>tileGarland('base'),lit:true},
+};
+const roofCSS=(id,T,mode)=>{const R=ROOF[id],sz=`0 0/${R.w*T}px ${R.h*T}px repeat-x`;
+  if(mode==='all')return`background:url(${tileGarland('all')}) ${sz},url(${R.url()}) ${sz}`;   // 미리보기: 전구 모두 켠 모습
+  return`background:url(${mode?tileGarland(mode):R.url()}) ${sz}`};
 /* ---------- 창문 + 커튼 (40×31칸, 창문은 x3~36 · y2~27) ---------- */
 function winLayer(){
   const A=pixArt(40,31);A.rect(3,2,34,26,INK);A.rect(4,3,32,24,'#CFE6F4');A.rect(20,3,1,24,INK);A.rect(4,15,32,1,INK);
@@ -2138,14 +2201,18 @@ function applyDeco(){
   const fl=$('#decoFloor'),wl=$('#decoWall');
   fl.className='deco-floor'+(on.floor?'':' def');fl.style.cssText=floorCSS(on.floor,T);
   wl.style.cssText=wallCSS(on.wall,T);
+  const rf=$('#decoRoof'),R=ROOF[on.roof];rf.classList.toggle('hidden',!R);
+  let roofH=0;
+  if(R){roofH=R.h*T;rf.style.cssText=roofCSS(on.roof,T)+`;height:${roofH}px`;
+    const[lr,lg]=rf.querySelectorAll('.lit');lr.style.cssText=R.lit?roofCSS(on.roof,T,'r'):'display:none';lg.style.cssText=R.lit?roofCSS(on.roof,T,'g'):'display:none';}
   // 창문 2개: 왼쪽 여백 · 창문 사이 · 오른쪽 여백이 같도록 벌려서, 벽(바닥 위) 높이의 가운데에 놓아요. 커튼도 두 창문에 똑같이
   //   넓은 화면(컴퓨터)에서는 창문 · 커튼을 도트 4배로 크게 (휴대폰은 3배) · 벽이나 폭에 다 안 들어가면 작게
   const wu=windowURL(on.curtain),wins=[$('#winImg'),$('#winImg2')];
   wins.forEach(wc=>{if(wc.getAttribute('src')!==wu)wc.src=wu});
   const sr=$('#stage').getBoundingClientRect(),stH=sr.height,stW=sr.width;
-  if(stH&&stW){const flH=parseFloat(getComputedStyle($('#stage')).getPropertyValue('--floor'))||0,wallH=stH-flH,
+  if(stH&&stW){const flH=parseFloat(getComputedStyle($('#stage')).getPropertyValue('--floor'))||0,wallH=stH-flH-roofH,   // 지붕이 있으면 지붕 아래 벽의 가운데
     u=stW>=560?4:3,k=clamp(Math.min((wallH-16)/(31*u),(stW/3-14)/(40*u)),.4,1),ww=Math.round(40*u*k),wh=Math.round(31*u*k),
-    top=Math.max(6,Math.round((wallH-wh)/2));
+    top=roofH+Math.max(6,Math.round((wallH-wh)/2));
     const gap=(stW-2*ww)/3;                            // 왼쪽 여백 = 창문 사이 = 오른쪽 여백
     wins.forEach((wc,n)=>{wc.style.left=Math.round(gap+ww/2+n*(ww+gap))+'px';wc.style.top=top+'px';wc.style.width=ww+'px';wc.style.height=wh+'px'});}
   const wh=$('#decoWheel'),obj=SPOT_OBJ[on.wheel];wh.classList.toggle('hidden',!obj);
@@ -2162,6 +2229,7 @@ let shopTab='item';
 function furnPreview(f){
   if(f.cat==='floor')return`<div class="fprev" style="${floorCSS(f.id,2)||''};box-shadow:none"></div>`;
   if(f.cat==='wall')return`<div class="fprev" style="--floor:0px;${wallCSS(f.id,2)}"></div>`;
+  if(f.cat==='roof')return`<div class="fprev" style="${roofCSS(f.id,2,f.id==='garland'?'all':null)},#F6F1E1"></div>`;
   if(f.cat==='curtain')return`<div class="fprev" style="display:flex;align-items:center;justify-content:center;background:#F6F1E1"><img class="px" src="${windowURL(f.id)}" style="width:60px;height:46.5px" alt=""></div>`;
   const o=SPOT_OBJ[f.id];
   return`<div class="fprev" style="display:flex;align-items:flex-end;justify-content:center;background:#F6F1E1"><img class="px" src="${o.url()}" style="width:${o.w*1.5}px;height:${o.h*1.5}px" alt=""></div>`;
@@ -2693,6 +2761,7 @@ function prepState(raw){
   if(s.rel!=='dislike')s.rel='like';   // 두 마리의 관계 (예전 데이터는 좋아!)
   if(s.apples==null)s.apples=3;
   if(!s.deco)s.deco=defaultDeco();
+  {const dd=defaultDeco();s.deco.own=s.deco.own||{};s.deco.on={...dd.on,...s.deco.on};s.deco.color={...dd.color,...s.deco.color}}   // 새 가구 칸(지붕 등) 기본값
   s.speed=1;
   return s;
 }
