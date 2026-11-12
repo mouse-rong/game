@@ -133,7 +133,7 @@ h3{font-size:16px;font-weight:400}
 .deco-floor.def{background-color:#F0E5C8;box-shadow:none;
   background-image:linear-gradient(#E2D2AC 4px,#EADDBC 4px,#EADDBC 7px,transparent 7px),radial-gradient(#D9C69A 1.6px,transparent 1.7px),radial-gradient(#E2D1A8 1.6px,transparent 1.7px);
   background-size:100% 100%,22px 14px,30px 18px;background-position:0 0,4px 11px,14px 17px;background-repeat:no-repeat,repeat,repeat}
-.win-img{position:absolute;left:4px;top:5px;width:120px;height:93px;z-index:2;pointer-events:none}
+.win-img{position:absolute;left:4px;top:clamp(10px,6%,30px);width:120px;height:93px;z-index:2;pointer-events:none}
 .deco-wheel{position:absolute;z-index:4;pointer-events:none}
 .stage.away-mode .deco-wall,.stage.away-mode .deco-floor,.stage.away-mode .deco-wheel{display:none}
 .shop-tabs{display:flex;gap:4px;margin-bottom:10px}
@@ -155,7 +155,7 @@ h3{font-size:16px;font-weight:400}
 .mouse-wrap.sel .sel-mark{display:block}
 .mouse-wrap.talking .sel-mark{display:none}
 @keyframes markbob{50%{transform:translateY(-3px)}}
-.adv-chip{position:absolute;top:12px;left:132px;z-index:41;font-size:12px;background:#fff;max-width:calc(100% - 146px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.adv-chip{position:absolute;top:clamp(14px,7%,34px);left:132px;z-index:41;font-size:12px;background:#fff;max-width:calc(100% - 146px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .mtabs{display:flex;align-items:center;flex-wrap:wrap;min-width:0}
 .mtab{font-size:15px}.mtab.on{background:var(--pink)}
 .add-mouse{margin-left:8px;display:inline-flex;align-items:center;gap:2px}
@@ -564,7 +564,7 @@ const PATCH_NOTES=[
       '새 재화 사과 조각과 상점 가구 탭: 바닥 · 벽지 · 커튼 · 쳇바퀴로 케이지를 꾸밀 수 있어요.',
     ]],
     ['🔧 바뀐 점',[
-      '메리 크리 쥑쥑 벽지가 깔끔한 베이지 바탕에 초록 트리와 눈꽃 격자 무늬로 바뀌었어요.',
+      '메리 크리 쥑쥑 벽지가 깔끔한 베이지 바탕에 빨간 눈꽃 격자 무늬로 바뀌었어요.',
       '레드 카펫이 레트 카펫으로 이름이 바뀌고, 노란 테두리 없이 차분한 와인빛 체크 무늬가 됐어요.',
       '패치노트를 날짜 · 항목별로 접었다 펼 수 있어요.',
       '모험 시간이 2 / 4 / 6시간으로 짧아졌어요.',
@@ -1724,7 +1724,7 @@ const FURN=[
   {id:'carpet',cat:'floor',name:'레트 카펫',price:3,desc:'차분한 와인빛 체크 무늬의 푹신한 크리스마스 카펫',xmas:true},
   {id:'paint',cat:'wall',name:'쥐깍 페인트',price:1,desc:'단색 벽지 · 색상 선택 가능',color:true},
   {id:'modern',cat:'wall',name:'모던 쥑의 선택',price:2,desc:'위는 밝은 아이보리, 아래는 나무판자 벽'},
-  {id:'merry',cat:'wall',name:'메리 크리 쥑쥑',price:3,desc:'깔끔한 베이지 바탕에 초록 트리와 눈꽃 격자 무늬',xmas:true},
+  {id:'merry',cat:'wall',name:'메리 크리 쥑쥑',price:3,desc:'깔끔한 베이지 바탕에 빨간 눈꽃 격자 무늬',xmas:true},
   {id:'sunshine',cat:'curtain',name:'해피 선샤인',price:1,desc:'하얀 커튼'},
   {id:'blind',cat:'curtain',name:'블라인드',price:1,desc:'창문을 가리는 블라인드'},
   {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 거는 크리스마스 가랜드',xmas:true},
@@ -1792,10 +1792,10 @@ function floorCSS(id,T){
 function tileModern(){return tile('modern',8,28,P=>{
   P(0,0,'#C99A6B',8,28);P(0,0,'#DDB283',1,28);P(7,0,'#A87A4E',1,28);P(3,9,'#B98B5E',1,4);P(5,18,'#B98B5E',1,5);
   P(0,0,'#D6A877',8,1);P(0,1,'#B78653',8,2);P(0,3,'#946638',8,1)})}
-function tileMerry(){return tile('merry6',32,40,P=>{   // 깔끔한 베이지 바탕 + 초록 트리 + 눈꽃으로 이어진 사선 격자
+function tileMerry(){return tile('merry7',32,40,P=>{   // 깔끔한 베이지 바탕 + 눈꽃으로 이어진 빨간 사선 격자
   const W=32,H=40,bg='#ECE5D4';
   P(0,0,bg,W,H);
-  const g=(x,y)=>((x+y)&1)?'#6F8C72':'#789579';   // 원색과 파스텔 사이의 차분한 초록 (살짝 뜨개 질감)
+  const g=()=>'#AF2323';   // 격자 · 눈꽃 색
   const put=(x,y)=>{x=((x%W)+W)%W;y=((y%H)+H)%H;P(x,y,g(x,y))};
   // 사선 격자: 눈꽃 꼭짓점 (0,0) · (16,20) 사이를 잇는 선
   for(let t=0;t<=20;t++){const dx=Math.round(t*16/20);put(dx,t);put(-dx,t);put(dx,-t);put(-dx,-t)}
@@ -1806,10 +1806,6 @@ function tileMerry(){return tile('merry6',32,40,P=>{   // 깔끔한 베이지 �
     put(cx-1,cy-4);put(cx+1,cy-4);put(cx-1,cy+4);put(cx+1,cy+4);put(cx-4,cy-1);put(cx-4,cy+1);put(cx+4,cy-1);put(cx+4,cy+1);
     P(((cx%W)+W)%W,((cy%H)+H)%H,bg)};
   flake(0,0);flake(16,20);
-  // 마름모 가운데 트리
-  const HW=[0,1,1,2,2,3,2,3,4,3,4,5];
-  const tree=(cx,cy)=>{HW.forEach((h,i)=>{for(let x=-h;x<=h;x++)put(cx+x,cy-7+i)});put(cx,cy+5);put(cx,cy+6)};
-  tree(16,0);tree(0,20);
 })}
 function wallCSS(id,T){
   if(id==='paint')return`background:${S.deco.color.paint}`;
@@ -1910,6 +1906,11 @@ function applyDeco(){
   fl.className='deco-floor'+(on.floor?'':' def');fl.style.cssText=floorCSS(on.floor,T);
   wl.style.cssText=wallCSS(on.wall,T);
   const wc=$('#winImg'),wu=windowURL(on.curtain);if(wc.getAttribute('src')!==wu)wc.src=wu;
+  // 창문: 케이지 높이에 맞춰 살짝 아래로 · 벽(바닥 위)에 다 들어가도록 필요하면 작게
+  const stH=$('#stage').getBoundingClientRect().height;
+  if(stH){const flH=parseFloat(getComputedStyle($('#stage')).getPropertyValue('--floor'))||0,top=clamp(Math.round(stH*.06),10,30),
+    k=clamp((stH-flH-top-8)/93,.5,1);
+    wc.style.top=top+'px';wc.style.width=Math.round(120*k)+'px';wc.style.height=Math.round(93*k)+'px'}
   const wh=$('#decoWheel'),obj=SPOT_OBJ[on.wheel];wh.classList.toggle('hidden',!obj);
   if(obj){
     const u=obj.url();if(wh.getAttribute('src')!==u)wh.src=u;
