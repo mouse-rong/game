@@ -155,7 +155,6 @@ h3{font-size:16px;font-weight:400}
 .mouse-wrap.sel .sel-mark{display:block}
 .mouse-wrap.talking .sel-mark{display:none}
 @keyframes markbob{50%{transform:translateY(-3px)}}
-.adv-chip{position:absolute;top:clamp(14px,7%,34px);left:132px;z-index:41;font-size:12px;background:#fff;max-width:calc(100% - 146px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .mtabs{display:flex;align-items:center;flex-wrap:wrap;min-width:0}
 .mtab{font-size:15px}.mtab.on{background:var(--pink)}
 .add-mouse{margin-left:8px;display:inline-flex;align-items:center;gap:2px}
@@ -207,7 +206,6 @@ h3{font-size:16px;font-weight:400}
 .away .walker canvas,.adv-panel .walker canvas{animation:bob .4s steps(1) infinite}
 .adv-panel{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:22px 14px 16px}
 .adv-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-.adv-chip{cursor:pointer}
 @keyframes walk{0%{left:-10%;transform:scaleX(1)}49%{left:80%;transform:scaleX(1)}50%{left:80%;transform:scaleX(-1)}99%{left:-10%;transform:scaleX(-1)}100%{left:-10%;transform:scaleX(1)}}
 @keyframes bob{0%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .pbar{width:min(300px,84%);height:16px;background:#fff;position:relative;
@@ -444,7 +442,6 @@ h3{font-size:16px;font-weight:400}
         <div class="deco-floor def" id="decoFloor"></div>
         <img class="px win-img" id="winImg" alt="">
         <img class="px deco-wheel hidden" id="decoWheel" alt="">
-        <span class="chip adv-chip hidden" id="advChip" data-nav="adv" title="모험 화면 보기"></span>
         <canvas class="doll hidden" id="dollCv"></canvas>
         <span class="chip doll-tag hidden" id="dollTag"></span>
         <div class="bubble hidden" id="bubble"></div>
@@ -1103,7 +1100,9 @@ function bindOnce(){
   $('#drawer').onclick=e=>{if(e.target.id==='drawer'||e.target.closest('#drawerClose'))closeDrawer()};
   $('#readBtn').onclick=readThought;
   $('#questBtn').onclick=openQuests;
-  $('#hTabs').onclick=e=>{const t=e.target.closest('[data-msel]');if(t)setSel(+t.dataset.msel);if(e.target.closest('[data-adopt]'))openAdopt()};
+  $('#hTabs').onclick=e=>{const t=e.target.closest('[data-msel]');
+    if(t){const i=+t.dataset.msel;setSel(i);if(S.mice[i]?.adv)setView('adv')}   // 모험 중인 쥐를 고르면 모험 화면으로
+    if(e.target.closest('[data-adopt]'))openAdopt()};
   $('#dollCv').addEventListener('pointerdown',e=>{e.preventDefault();pokeDoll()});
   setupStageResize();
   startLoops();
@@ -1255,7 +1254,6 @@ function renderStage(){
   applyDeco();
   const aw=$('#away');aw.classList.toggle('hidden',!allAway);
   if(allAway)renderAway();
-  $('#advChip').classList.toggle('hidden',allAway||!S.mice.some(m=>m.adv));
   updateAdvProgress();
 }
 function renderAway(){
@@ -1277,8 +1275,6 @@ function updateAdvProgress(){
     $$('[data-adv-bar]').forEach(b=>b.style.width=(p*100)+'%');
     $$('[data-adv-left]').forEach(l=>l.textContent=`남은 시간 ${fmtLeft(end-now)} · ${Math.floor(p*100)}%`);}
   $$('[data-adv-status]').forEach(el=>{const m=S.mice[+el.dataset.advStatus];if(m&&m.adv)el.textContent=`${m.mouse.name} · ${fmtLeft(m.adv.end-now)} 남음`});
-  const c=$('#advChip');
-  if(c&&!c.classList.contains('hidden'))c.textContent='🗺 '+S.mice.filter(m=>m.adv).map(m=>`${m.mouse.name} 모험 중 · ${fmtLeft(m.adv.end-now)}`).join(' / ');
 }
 function fmtLeft(ms){ms=Math.max(0,ms);const s=Math.ceil(ms/1000);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),ss=s%60;
   return h?`${h}시간 ${m}분`:m?`${m}분 ${ss}초`:`${ss}초`}
@@ -1911,8 +1907,7 @@ function applyDeco(){
   const sr=$('#stage').getBoundingClientRect(),stH=sr.height;
   if(stH){const flH=parseFloat(getComputedStyle($('#stage')).getPropertyValue('--floor'))||0,top=clamp(Math.round(stH*.06),10,30),
     u=sr.width>=560?4:3,k=clamp((stH-flH-top-8)/(31*u),.5,1),ww=Math.round(40*u*k),wh=Math.round(31*u*k);
-    wc.style.top=top+'px';wc.style.width=ww+'px';wc.style.height=wh+'px';
-    const ac=$('#advChip');ac.style.left=(4+ww+8)+'px';ac.style.maxWidth=`calc(100% - ${4+ww+8+14}px)`}
+    wc.style.top=top+'px';wc.style.width=ww+'px';wc.style.height=wh+'px';}
   const wh=$('#decoWheel'),obj=SPOT_OBJ[on.wheel];wh.classList.toggle('hidden',!obj);
   if(obj){
     const u=obj.url();if(wh.getAttribute('src')!==u)wh.src=u;
