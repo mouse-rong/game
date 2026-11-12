@@ -78,6 +78,9 @@ h3{font-size:16px;font-weight:400}
 .cage-row .cg{flex:1;min-width:0;font-size:15px}
 .cage-row .cg b{font-weight:400}
 .cage-add{width:calc(100% - 6px);margin-top:4px}
+.pbtn.danger{background:#F3C9C4}
+.cage-warn{background:#FCEDEA;padding:10px 12px;margin:10px 3px 4px;font-size:13px;line-height:1.5;
+  box-shadow:0 -2px 0 0 #C0453B,0 2px 0 0 #C0453B,-2px 0 0 0 #C0453B,2px 0 0 0 #C0453B}
 .linkbtn{border:0;background:none;cursor:pointer;text-decoration:underline;font-size:13px;padding:0;opacity:.75}
 /* ---------- setup ---------- */
 #setup{position:fixed;inset:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 14px}
@@ -554,6 +557,7 @@ const INK='#422F12';
 const PATCH_NOTES=[
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
+      '프로필 > 내 케이지에서 케이지를 삭제할 수 있어요. 지우기 전에 한 번 더 물어봐요.',
       '두 번째 쥐를 입양할 때 첫째와의 관계(좋아! / 싫어!)를 정해요. 싫어!면 코 킁킁 할 때 성격대로 신경질을 내고, 마주 보고 일어서서 투닥거려요.',
       '쳇바퀴 · 쮜리스마스 트리를 누르면 쥐가 운동해서 몸무게가 1g 줄어요 (쥐마다 하루 3번).',
       '쮜리스마스 트리(호박씨 5개): 쳇바퀴 자리에 놓는 크리스마스 트리예요. 별 · 오너먼트 · 아주 작은 쥐 인형 · 선물 2개!',
@@ -590,7 +594,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121140';
+const APP_VERSION='202611121146';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -2313,7 +2317,8 @@ function cagesHTML(){
   const rows=SL.slots.map((js,i)=>{const c=cageInfo(js),cur=i===SL.cur;
     return`<div class="cage-row ${cur?'cur':''}"><img class="px" src="${iconFor(c.color)}" alt="">
       <div class="cg"><b>${esc(c.owner)}</b> 주인<div class="muted" style="font-size:12px">${c.mice.map(esc).join(' · ')||'-'}</div></div>
-      ${cur?'<span class="chip" style="background:var(--pink)">지금 케이지</span>':`<button class="pbtn sm sky" data-cage="${i}">전환</button>`}</div>`}).join('');
+      ${cur?'<span class="chip" style="background:var(--pink)">지금 케이지</span>':`<button class="pbtn sm sky" data-cage="${i}">전환</button>`}
+      <button class="pbtn sm danger" data-cage-del="${i}" title="케이지 삭제">삭제</button></div>`}).join('');
   const add=SL.slots.length<MAX_CAGES?`<button class="pbtn butter cage-add" data-cage-add>＋ 새 주인 · 케이지 추가</button>`:'';
   return`<div class="section pbox"><h3>🏠 내 케이지 <span class="muted" style="font-size:13px">${SL.slots.length}/${MAX_CAGES}</span></h3>
     <p class="note" style="margin:-4px 0 8px">주인과 쥐, 아이템·재화·꾸미기는 케이지마다 따로예요.</p>${rows}${add}</div>`;
@@ -2340,6 +2345,7 @@ function renderProf(){
     <dt>성격</dt><dd>${esc(o.personality)} <span class="muted" style="font-size:12px">— ${OWNER_P[o.personality]}</span></dd><dt>MBTI</dt><dd>${esc(o.mbti)||'-'}</dd></dl></div>`;
   S.mice.forEach((mm,i)=>sizeCanvas(drawMouse($('#profCv'+i),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy'}),5));
   $('#profBody').onclick=e=>{if(e.target.closest('[data-edit-owner]')){openOwnerEdit();return}
+    const del=e.target.closest('[data-cage-del]');if(del){confirmDeleteCage(+del.dataset.cageDel);return}
     const b=e.target.closest('[data-cage]');if(b){switchCage(+b.dataset.cage);return}
     if(e.target.closest('[data-cage-add]'))addCage()};
 }
@@ -2498,7 +2504,8 @@ function save(){
 async function flushSave(){
   clearTimeout(saveT);
   if(!remoteOn()||!ACC||!dirty||saving)return;
-  const key=ACC.key,h=ACC.h,rec=normRec(lsGet(LOCAL_SAVE+key));if(!rec)return;
+  const key=ACC.key,h=ACC.h,raw=lsGet(LOCAL_SAVE+key);
+  const rec=raw&&Array.isArray(raw.slots)&&!raw.slots.length?{at:raw.at||Date.now(),cur:0,slots:[]}:normRec(raw);if(!rec)return;   // 빈 기록 = 케이지를 모두 지운 상태
   saving=true;dirty=false;renderSaveState();
   try{await Store.putSave(key,h,rec);lastSaved=Date.now();saveErr=null}
   catch(e){saveErr=e?.code||'error';dirty=true;console.warn('save failed',e)}
@@ -2625,6 +2632,32 @@ function switchCage(i){
 function addCage(){
   if(SL.slots.length>=MAX_CAGES){toast(`케이지는 계정당 최대 ${MAX_CAGES}개까지예요`);return}
   save();resetRuntime();S=null;openSetup(true);
+}
+function confirmDeleteCage(i){
+  if(!SL.slots[i])return;
+  const c=cageInfo(SL.slots[i]),last=SL.slots.length===1,cur=i===SL.cur;
+  modal('⚠️ 케이지 삭제',`<p>정말 <b style="font-weight:400">${esc(c.owner)} 주인</b>의 케이지를 없앨까요?</p>
+    <div class="cage-warn">이 케이지의 주인 · 쥐(${c.mice.map(esc).join(' · ')||'-'}) · 아이템 · 호박씨 · 사과 조각 · 가구 꾸미기가 <b style="font-weight:400">모두 사라지고, 되돌릴 수 없어요.</b>
+    ${last?'<br>남은 케이지가 이것뿐이라, 삭제하면 새 주인 · 쥐 만들기 화면으로 가요.':cur?'<br>지금 보고 있는 케이지라, 삭제하면 다른 케이지로 옮겨 가요.':''}</div>`,
+    [{label:'취소'},{label:'삭제하기',cls:'danger',fn:()=>deleteCage(i)}]);
+}
+function deleteCage(i){
+  if(!SL.slots[i])return;
+  const name=cageInfo(SL.slots[i]).owner;
+  if(i!==SL.cur){   // 다른 케이지: 목록에서만 빼요
+    save();SL.slots.splice(i,1);if(i<SL.cur)SL.cur--;save();renderAll();
+    toast(`🗑 ${name} 주인의 케이지를 삭제했어요`);return;
+  }
+  SL.slots.splice(i,1);resetRuntime();S=null;
+  if(!SL.slots.length){   // 마지막 케이지: 빈 기록을 저장하고 새로 만들기
+    SL={cur:0,slots:[]};lsSet(LOCAL_SAVE+ACC.key,{at:Date.now(),cur:0,slots:[]});dirty=true;flushSave();
+    openSetup();toast(`🗑 ${name} 주인의 케이지를 삭제했어요`);return;
+  }
+  SL.cur=Math.max(0,Math.min(i,SL.slots.length)-1);
+  let st=null;try{st=prepState(JSON.parse(SL.slots[SL.cur]))}catch(e){}
+  if(!st){SL.cur=0;try{st=prepState(JSON.parse(SL.slots[0]))}catch(e){}}
+  S=st;save();startGame();
+  toast(`🗑 ${name} 주인의 케이지를 삭제하고 ${S.owner.name} 주인의 케이지로 왔어요`);
 }
 function cancelAddCage(){
   let st=null;try{st=prepState(JSON.parse(SL.slots[SL.cur]))}catch(e){}
