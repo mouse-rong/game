@@ -6,6 +6,6 @@
 // 비워 두면 서버 저장 없이 이 브라우저에만 저장돼요.
 // 게임 패치는 index.html만 바꾸면 되고, 이 파일과 진행상황은 그대로 유지돼요.
 window.JWI_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://dupcegiufzqzvkrcdkfs.supabase.co',
+  supabaseAnonKey: 'sb_publishable_ExqGXH5B24pYD8umfYd2VQ_pFRjRGQs'
 };
