@@ -1907,10 +1907,12 @@ function applyDeco(){
   wl.style.cssText=wallCSS(on.wall,T);
   const wc=$('#winImg'),wu=windowURL(on.curtain);if(wc.getAttribute('src')!==wu)wc.src=wu;
   // 창문: 케이지 높이에 맞춰 살짝 아래로 · 벽(바닥 위)에 다 들어가도록 필요하면 작게
-  const stH=$('#stage').getBoundingClientRect().height;
+  //       넓은 화면(컴퓨터)에서는 창문 · 커튼을 도트 4배로 크게 (휴대폰은 3배)
+  const sr=$('#stage').getBoundingClientRect(),stH=sr.height;
   if(stH){const flH=parseFloat(getComputedStyle($('#stage')).getPropertyValue('--floor'))||0,top=clamp(Math.round(stH*.06),10,30),
-    k=clamp((stH-flH-top-8)/93,.5,1);
-    wc.style.top=top+'px';wc.style.width=Math.round(120*k)+'px';wc.style.height=Math.round(93*k)+'px'}
+    u=sr.width>=560?4:3,k=clamp((stH-flH-top-8)/(31*u),.5,1),ww=Math.round(40*u*k),wh=Math.round(31*u*k);
+    wc.style.top=top+'px';wc.style.width=ww+'px';wc.style.height=wh+'px';
+    const ac=$('#advChip');ac.style.left=(4+ww+8)+'px';ac.style.maxWidth=`calc(100% - ${4+ww+8+14}px)`}
   const wh=$('#decoWheel'),obj=SPOT_OBJ[on.wheel];wh.classList.toggle('hidden',!obj);
   if(obj){
     const u=obj.url();if(wh.getAttribute('src')!==u)wh.src=u;
