@@ -584,6 +584,7 @@ const PATCH_NOTES=[
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
       '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
       '굴뚝 아마 있겠쥐(호박씨 3개): 별 · 잎 · 빨간 열매 가랜드에 빨강 · 초록 전구가 번갈아 반짝여요.',
+      '하이, 산타 커튼의 가랜드가 조금 작아져서 창문 위에 세 번 늘어져요.',
     ]],
     ['🔧 바뀐 점',[
       '창문이 두 개가 됐어요. 양옆 여백과 창문 사이 간격이 같게, 벽 가운데 높이에 걸려 있어요.',
@@ -631,7 +632,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121707';
+const APP_VERSION='202611121709';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1956,7 +1957,7 @@ const FURN=[
   {id:'garland',cat:'roof',name:'굴뚝 아마 있겠쥐',price:3,cur:'seed',desc:'별이 달린 초록 잎 가랜드에 빨강 · 초록 전구가 번갈아 반짝반짝',xmas:true},
   {id:'sunshine',cat:'curtain',name:'해피 선샤인',price:1,desc:'하얀 커튼'},
   {id:'blind',cat:'curtain',name:'블라인드',price:1,desc:'창문을 가리는 블라인드'},
-  {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 거는 크리스마스 가랜드',xmas:true},
+  {id:'santa',cat:'curtain',name:'하이, 산타',price:2,desc:'창문 위에 세 번 늘어지게 거는 크리스마스 가랜드',xmas:true},
   {id:'wheel',cat:'wheel',name:'운동해야쥐',price:5,func:true,desc:'투명한 바퀴 + 아이보리·파스텔 틀의 쳇바퀴. 🏋️ 기능: 케이지에서 누르면 쥐 몸무게 -1g (쥐마다 하루 3번)'},
   {id:'xmastree',cat:'wheel',name:'쮜리스마스 트리',price:5,cur:'seed',func:true,desc:'꼭대기엔 별, 가운데엔 오너먼트와 아주 작은 쥐 인형, 밑동엔 선물 2개. 🏋️ 기능: 케이지에서 누르면 쥐 몸무게 -1g (쥐마다 하루 3번)',xmas:true},
 ];
@@ -2113,17 +2114,16 @@ function curtainLayers(id){
     const C=pixArt(40,31);C.rect(33,3,1,22,'#BFB49C');C.rect(32,25,3,2,'#B98B62');C.set(33,25,'#D6A877');
     return[A,C];
   }
-  if(id==='santa'){
-    const A=pixArt(40,31),g='#3F7F3E',G='#5FA35A';
-    for(let x=2;x<=37;x++){const t=((x-2)%18)/17,y=2+Math.round(4*Math.sin(Math.PI*t));
-      A.set(x,y,g);A.set(x,y+1,G);if(x%2===0)A.set(x,y-1,G);}
-    const ball=(x,c)=>{const t=((x-2)%18)/17,y=2+Math.round(4*Math.sin(Math.PI*t))+2;A.rect(x,y,2,2,c);A.set(x,y,'#FFF3F0')};
-    ball(10,'#E0484F');ball(28,'#E0484F');ball(6,'#F2C14E');ball(15,'#8FC3E8');ball(24,'#F2C14E');ball(33,'#8FC3E8');
-    A.rect(18,0,4,2,'#F2C14E');A.set(19,2,'#F2C14E');A.set(20,2,'#F2C14E');            // 별
+  if(id==='santa'){   // 창문 위 가랜드: 3번 늘어지게 (고리 x=2 · 14 · 26 · 38)
+    const A=pixArt(40,31),g='#3F7F3E',G='#5FA35A',gy=x=>2+Math.round(3*Math.sin(Math.PI*((x-2)%12)/12));
+    for(let x=2;x<=37;x++){const y=gy(x);A.set(x,y,g);A.set(x,y+1,G);if(x%2===0)A.set(x,y-1,G);}
+    const ball=(x,c)=>{const y=gy(x)+2;A.rect(x,y,2,2,c);A.set(x,y,'#FFF3F0')};
+    [[5,'#E0484F'],[9,'#F2C14E'],[17,'#8FC3E8'],[21,'#E0484F'],[29,'#F2C14E'],[33,'#8FC3E8']].forEach(([x,c])=>ball(x,c));
+    [14,26].forEach(x=>{A.rect(x-1,0,3,2,'#F2C14E');A.set(x,2,'#F2C14E')});              // 고리마다 작은 별
     A.rect(0,1,3,2,'#E0484F');A.rect(37,1,3,2,'#E0484F');A.set(1,3,'#E0484F');A.set(38,3,'#E0484F');  // 리본
     A.outline();
     const L=pixArt(40,31),lc=['#FFE680','#FFFFFF','#F7A8B8'];
-    for(let x=3;x<=36;x+=3){const t=((x-2)%18)/17,y=2+Math.round(4*Math.sin(Math.PI*t));L.set(x,y,lc[(x/3|0)%3])}
+    for(let x=3;x<=36;x+=3){L.set(x,gy(x),lc[(x/3|0)%3])}
     return[A,L];
   }
   return[];
