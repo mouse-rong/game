@@ -152,6 +152,8 @@ h3{font-size:16px;font-weight:400}
 .mouse-wrap.talking{z-index:45!important}
 .mouse-wrap .shadow{position:absolute;background:rgba(66,47,18,.13)}
 .mouse-inner.walking canvas{animation:bob .22s steps(1) infinite}
+.mouse-inner.tussle canvas{animation:tussle .3s steps(1) infinite}
+@keyframes tussle{0%{transform:translate(0,0)}50%{transform:translate(0,-4px)}}
 .mouse-wrap canvas{cursor:pointer;touch-action:manipulation;display:block}
 .sel-mark{display:none;position:absolute;left:var(--hx,60%);bottom:calc(100% + 5px);width:12px;height:8px;margin-left:-6px;background:var(--pink2);
   clip-path:polygon(0 0,100% 0,50% 100%);animation:markbob .9s steps(1) infinite;pointer-events:none}
@@ -548,6 +550,7 @@ const INK='#422F12';
 const PATCH_NOTES=[
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
+      '두 번째 쥐를 입양할 때 첫째와의 관계(좋아! / 싫어!)를 정해요. 싫어!면 코 킁킁 할 때 성격대로 신경질을 내고, 마주 보고 일어서서 투닥거려요.',
       '쳇바퀴 · 쮜리스마스 트리를 누르면 쥐가 운동해서 몸무게가 1g 줄어요 (쥐마다 하루 3번).',
       '쮜리스마스 트리(호박씨 5개): 쳇바퀴 자리에 놓는 크리스마스 트리예요. 별 · 오너먼트 · 아주 작은 쥐 인형 · 선물 2개!',
       '상점 가구에 카테고리 탭(바닥 · 벽지 · 커튼 · 쳇바퀴)이 생겨서 원하는 것만 골라 볼 수 있어요.',
@@ -659,7 +662,7 @@ const MOUSE_P={
   '엉뚱함':'호박씨 물어올 확률 2배(10%) · 좋아하는 것이 자주 바뀜',
 };
 const CTX_LABEL={idle:'평소',pet:'쓰다듬은 뒤',feed:'밥 먹은 뒤',snack:'간식 먹은 뒤',bath:'목욕한 뒤',play:'놀고 난 뒤',adv:'모험 후',
-  pea:'완두콩 먹은 뒤',nose:'코인사 후',snug:'꼭 붙어 있다가',mounjiro:'마운찌로 후',potion:'물약 후',doll:'인형 받은 뒤',salon:'살롱 후'};
+  pea:'완두콩 먹은 뒤',nose:'코인사 후',grr:'투닥거린 뒤',snug:'꼭 붙어 있다가',mounjiro:'마운찌로 후',potion:'물약 후',doll:'인형 받은 뒤',salon:'살롱 후'};
 
 /* ---------- 주인이 하는 말 (성격 × 상황) ---------- */
 const OWNER_SAY={
@@ -877,7 +880,13 @@ const TPL_STAND=[
 ].map(r=>r.padEnd(27,'.'));
 /* 코를 치켜든 프레임 */
 const TPL_STAND2=TPL_STAND.map((r,i)=>i===5?r.slice(0,17)+'n'+r.slice(18):i===6?r.slice(0,17)+'k'+r.slice(18):r);
-const POSES={lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9}};
+/* 투닥거리는 자세: 서 있는 자세에서 앞발을 위(A) · 아래(B)로 휘저어요 */
+const setPx=(t,list)=>{const o=t.slice();list.forEach(([r,c,ch])=>{o[r]=o[r].slice(0,c)+ch+o[r].slice(c+1)});return o};
+const ARM_OFF=[[10,15,'.'],[10,16,'.'],[11,16,'.']];
+const TPL_FIGHT_A=setPx(TPL_STAND,[...ARM_OFF,[9,16,'p'],[9,17,'p'],[8,17,'P']]);
+const TPL_FIGHT_B=setPx(TPL_STAND,[...ARM_OFF,[11,16,'p'],[11,17,'p'],[12,16,'P']]);
+const POSES={lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
+  fightA:{t:TPL_FIGHT_A,row:14,col:9},fightB:{t:TPL_FIGHT_B,row:14,col:9}};
 const MOUSE_DEFAULT='#32312F';
 function mousePalette(base){
   const l=rgbToHsl(...hexToRgb(base))[2];
@@ -961,6 +970,7 @@ const ICONS={
   stink:{p:{g:'#A3A878'},d:[".g.","g..",".g.","..g",".g.","g.."]},
   bubS:{p:{a:'#8FC3DC',w:'#FFFFFF',l:'#E6F5FC'},d:[".aa.","awla","alla",".aa."]},
   bubL:{p:{a:'#8FC3DC',w:'#FFFFFF',l:'#E6F5FC'},d:[".aaaa.","awwlla","awllla","alllla","alllla",".aaaa."]},
+  anger:{p:{r:'#E0484F'},d:[".r...r.","rr...rr","..r.r..",".......","..r.r..","rr...rr",".r...r."]},
   sparkle:{p:{y:'#F7C948',w:'#FFFFFF',o:'#F2A93B'},d:["...o...","...y...","..oyo..","oyywyyo","..oyo..","...y...","...o..."]},
   note:{p:{w:'#FFFDF4',p:'#F4A9B8'},d:[".kkkkkkkk.",".kwwwwwwk.",".kwkkkkwk.",".kwwwwwwk.",".kwkkkkwk.",".kwwwwwwk.",".kwkkwppk.",".kwwwwppk.",".kkkkkkkk.",".........."]},
   heart:{p:{p:'#F28FA6',w:'#FFFFFF'},d:[".kk.kk.","kppkppk","kwppppk",".kpppk.","..kpk..","...k..."]},
@@ -1351,19 +1361,42 @@ function stageStep(dt){
 const NOSE_SQ=['찍? (킁킁)','찍찍? (누구 냄새지?)','찍! (코인사!)'];
 const NOSE_SQ2=['찍! (안녕!)','찍~ (반가워)','찍찍! (킁킁 킁)'];
 const SNUG_SQ=['찍~♡ (따뜻해)','찌잉~ (꼭 붙어 있자)','찍... (포근해)','찍찍 (찰딱!)'];
-function noseCol(i){const g=buildMouse({pose:'lie',weight:S.mice[i].stats.weight}).grid;
+/* 관계가 '싫어!'일 때: 성격별 신경질 말풍선 */
+const SQ_GRR={
+  '얌전함':['쮜익... (저리 가 주세요)','쮜익. (조금 떨어져 줄래요?)','쮜익... (넌 누구세요?)'],
+  '예민함':['쮜익!! (저리 가!)','쮜이익! (떨어져! 냄새 맡지 마!)','쮜익! (넌 뭐야!)'],
+  '애교쟁이':['쮜익! (주인님은 내 거야!)','쮜잉! (저리 가, 흥!)','쮜익~! (넌 뭔데 내 옆에 와!)'],
+  '활발함':['쮜익! (덤벼라!)','쮜이익! (저리 비켜!)','쮜익쮜익! (한판 붙자!)'],
+  '엉뚱함':['쮜익? (넌 뭐야, 외계쥐야?)','쮜익! (내 감자에 손대지 마!)','쮜이익... (떨어져, 너 구름 냄새 나)'],
+};
+/* 관계가 '싫어!'일 때: 성격별 속마음 (투닥거린 뒤) */
+const GRR_T={
+  '얌전함':['{p}한테서 조금 떨어져 있고 싶어요.','{p가} 다가오면 마음이 불편해요...','싸우는 건 싫은데... {p}만 보면 털이 서요.'],
+  '예민함':['{p} 냄새 싫어! 여긴 내 영역이야!','{p}만 보면 수염이 곤두서!','{p가} 또 내 밥그릇 근처에 왔어...'],
+  '애교쟁이':['주인님은 나만 쓰다듬어야 해! {p} 말고!','{p}보다 내가 더 귀엽죠? 그쵸?','흥, {p}한테 주인님 안 뺏길 거야.'],
+  '활발함':['{p}! 다음 판엔 꼭 이길 거야!','투닥투닥! 솔직히 좀 재밌었어.','{p이랑} 겨루니까 땀이 나네!'],
+  '엉뚱함':['{p는} 사실 변장한 고양이일지도 몰라...','{p이랑} 싸우다가 왜 싸웠는지 까먹었어.','오늘의 결투 결과: 무승부. 아마도.'],
+};
+Object.keys(GRR_T).forEach(k=>{if(MOUSE_T[k])MOUSE_T[k].grr=GRR_T[k]});
+const relOf=()=>S.rel==='dislike'?'dislike':'like';
+function grrLine(i){const s0=S.sel;S.sel=i;const p=S.mouse.personality,t=fill(bag('grr:'+p,SQ_GRR[p]||SQ_GRR['예민함']));S.sel=s0;return t}
+function noseCol(i,pose='lie'){const g=buildMouse({pose,weight:S.mice[i].stats.weight}).grid;
   for(const row of g){const x=row.indexOf('n');if(x>=0)return[x,row.length]}return[21,27]}
 function startInteraction(){
   const home=homeIdx();if(home.length<2)return false;
   const[a,b]=home.slice(0,2).map(i=>RT[i]),now=Date.now();
   if(!a||!b||a.x===null||b.x===null||now<a.anim.until||now<b.anim.until)return false;
-  const sc=pxScale,type=Math.random()<.5?'nose':'snug';
+  const sc=pxScale,dislike=relOf()==='dislike';
+  const type=dislike?(Math.random()<.45?'nose':'fight'):(Math.random()<.5?'nose':'snug');   // 좋아!: 코인사 · 찰딱 / 싫어!: 신경질 코인사 · 투닥
   const L=a.x<=b.x?a:b,R=L===a?b:a;
   const y=clamp((a.y+b.y)/2+(Math.random()-.5)*G.D*.4,0,G.D);
   const mid=(L.x+spriteW(L)/2+R.x+spriteW(R)/2)/2,P={};
   if(type==='nose'){                                  // 마주 보고 코끝 맞대기
     const[nl]=noseCol(L.i),[nr,wr]=noseCol(R.i),lx=mid-(nl+1)*sc;
     P[L.i]={x:lx,y,dir:1};P[R.i]={x:lx+(nl+1-(wr-1-nr))*sc,y,dir:-1};
+  }else if(type==='fight'){                          // 마주 보고 일어서서 투닥 (코끝 사이 2칸)
+    const[nl]=noseCol(L.i,'stand'),[nr,wr]=noseCol(R.i,'stand'),lx=mid-(nl+2)*sc;
+    P[L.i]={x:lx,y,dir:1};P[R.i]={x:lx+(nl+3-(wr-1-nr))*sc,y,dir:-1};
   }else{                                              // 같은 쪽을 보고 몸을 포개서 찰딱
     const d=Math.random()<.5?1:-1,ahead=d>0?R:L,behind=ahead===R?L:R;
     const yb=Math.min(y,G.D-sc*1.6),bx=mid-spriteW(behind)/2-d*4*sc;
@@ -1373,7 +1406,7 @@ function startInteraction(){
   const shift=lo<0?-lo:hi>0?-hi:0;
   [L,R].forEach(r=>{const p=P[r.i];r.goal={dir:p.dir};r.after=null;r.faceAs=null;
     if(r.pose!=='lie'){r.pose='lie';drawSprite(r)}walkTo(r,p.x+shift,p.y,{state:'goto'})});
-  INT={type,a:L.i,b:R.i,phase:'go',until:now+15000};
+  INT={type,grr:dislike,a:L.i,b:R.i,phase:'go',until:now+15000};
   return true;
 }
 function pairSpot(){const A=RT[INT.a],B=RT[INT.b];
@@ -1385,21 +1418,36 @@ function stepInteraction(now){
     if(a.state==='arrived'&&b.state==='arrived'){
       INT.phase='act';
       [a,b].forEach(r=>{r.dir=r.goal.dir;r.state='inter';r.pose='lie'});
-      if(INT.type==='nose'){
+      if(INT.type==='nose'&&INT.grr){                 // 싫어!: 코 킁킁 하다가 신경질
+        INT.until=now+2600;a.sniffUntil=b.sniffUntil=now+900;
+        squeak(grrLine(a.i),a.i);
+        setTimeout(()=>{if(INT&&INT.grr&&INT.phase==='act')squeak(grrLine(b.i),b.i)},800);
+        setTimeout(()=>{if(INT&&INT.grr&&INT.phase==='act')particles('anger',2,null,pairSpot())},1000);
+      }else if(INT.type==='nose'){
         INT.until=now+2800;a.sniffUntil=b.sniffUntil=INT.until;
         squeak(pick(NOSE_SQ),a.i);
         setTimeout(()=>{if(INT&&INT.type==='nose'&&INT.phase==='act')squeak(pick(NOSE_SQ2),b.i)},800);
         setTimeout(()=>{if(INT&&INT.type==='nose'&&INT.phase==='act')particles('heart',2,null,pairSpot())},1300);
+      }else if(INT.type==='fight'){                   // 싫어!: 마주 보고 일어서서 앞발로 투닥투닥
+        INT.until=now+3200+Math.random()*1800;INT.hearts=now+500;
+        [a,b].forEach(r=>{r.standUntil=INT.until;r.inner.classList.add('tussle')});
+        squeak(grrLine(a.i),a.i);
+        setTimeout(()=>{if(INT&&INT.type==='fight'&&INT.phase==='act')squeak(grrLine(b.i),b.i)},900);
       }else{
         INT.until=now+7000+Math.random()*5000;INT.hearts=now+1200;
         [a,b].forEach(r=>{r.faceAs='happy';r.faceUntil=INT.until});
         squeak(pick(SNUG_SQ),pick([a.i,b.i]));
       }
       drawSprite(a);drawSprite(b);
-      interThought(INT.type,[a.i,b.i]);
+      interThought(INT.grr?'grr':INT.type,[a.i,b.i]);
     }else if(now>INT.until)endInteraction(true);
   }else{
     if(INT.type==='snug'&&now>INT.hearts){INT.hearts=now+2200+Math.random()*1800;particles('heart',1,null,pairSpot())}
+    if(INT.type==='fight'){
+      const f=Math.floor(now/150)%2;   // 앞발을 번갈아 위아래로
+      [[a,f?'fightA':'fightB'],[b,f?'fightB':'fightA']].forEach(([r,ps])=>{if(r.pose!==ps){r.pose=ps;drawSprite(r)}});
+      if(now>INT.hearts){INT.hearts=now+800+Math.random()*600;particles('anger',1,null,pairSpot())}
+    }
     if(now>INT.until)endInteraction(false);
   }
 }
@@ -1407,6 +1455,8 @@ function endInteraction(cancel){
   if(!INT)return;const now=Date.now(),ids=[INT.a,INT.b];INT=null;
   ids.forEach(i=>{const r=RT[i];if(!r)return;
     if(['inter','arrived','goto'].includes(r.state)){r.state='idle';r.until=now+600+Math.random()*2400;r.moving=false;r.inner.classList.remove('walking')}
+    if(r.pose.startsWith('fight')){r.pose='lie';r.standUntil=0;drawSprite(r)}
+    r.inner.classList.remove('tussle');
     r.goal=null;r.faceAs=null;});
   nextInter=now+(cancel?8000:16000)+Math.random()*20000;
 }
@@ -1437,6 +1487,7 @@ function particles(kind,n=5,i=S.sel,at){
     if(kind==='bubble'){icon=Math.random()<.5?'bubS':'bubL';sz=icon==='bubS'?(10+Math.random()*7):(16+Math.random()*12)}
     else if(kind==='crumb'||kind==='seed'){icon='seed';sz=kind==='crumb'?11:20}
     else if(kind==='music'){icon='music';sz=15}
+    else if(kind==='anger'){icon='anger';sz=16+Math.random()*6}
     else if(kind==='sparkle'){icon='sparkle';sz=16+Math.random()*14;p.classList.add('sparkle')}
     p.src=iconURL(icon);p.style.width=sz+'px';
     p.style.left=(cx+(Math.random()-.55)*w*.8)+'px';
@@ -1468,7 +1519,7 @@ function squeakContext(){
   if(st.happy>=85)c.push('찍찍찍~♪ (신나요!)');
   if(st.aff>=30)c.push('찍찍♡','찍~ (주인님 좋아요)');
   if(S.doll)c.push(fill('찍찍! ({d은} 내 친구예요)'));
-  if(S.mice.length>1)c.push(fill('찍찍! ({p} 어디 갔지?)'),fill('찍~ ({p이랑} 놀래요)'));
+  if(S.mice.length>1){if(relOf()==='dislike')c.push(fill('쮜익! ({p} 저리 가!)'),fill('찍... ({p} 또 왔어?)'));else c.push(fill('찍찍! ({p} 어디 갔지?)'),fill('찍~ ({p이랑} 놀래요)'))}
   return c;
 }
 function poke(i=S.sel){
@@ -2087,12 +2138,13 @@ function openAdopt(){
     <label class="f">털 색상</label><div class="swatches" id="adSw"></div>
     <div class="colorrow"><input type="color" id="adColor" value="${A.color.toLowerCase()}"><span class="muted" style="font-size:12px">직접 고르기</span></div>
     <label class="f">성별</label><div class="seg" id="adGender"></div>
-    <label class="f">성격</label><div class="seg" id="adPers"></div><div class="pdesc" id="adPersDesc"></div>`,
+    <label class="f">성격</label><div class="seg" id="adPers"></div><div class="pdesc" id="adPersDesc"></div>
+    <label class="f">${esc(S.mice[0].mouse.name)}${jo(S.mice[0].mouse.name,'과')}의 관계</label><div class="seg" id="adRel"></div><div class="pdesc" id="adRelDesc"></div>`,
     [{label:'취소'},{label:`입양하기 · 🌰${ADOPT_PRICE}`,cls:'pink',fn:()=>{
       const nm=$('#adName').value.trim();if(!nm){toast('쥐 이름을 지어 주세요!');$('#adName').focus();return false}
       if(S.seeds<ADOPT_PRICE){toast('호박씨가 부족해요!');return false}
       if(S.mice.length>=MAX_MICE)return;
-      S.seeds-=ADOPT_PRICE;
+      S.seeds-=ADOPT_PRICE;S.rel=SU.adR==='싫어!'?'dislike':'like';nextInter=Date.now()+6000;
       S.mice.push(newMouse({name:nm,nick:$('#adNick').value.trim(),color:A.color,gender:A.gender,personality:A.pers}));
       const i=S.mice.length-1;S.sel=i;save();
       if(window.innerWidth<=860)setView('home');else renderAll();
@@ -2103,6 +2155,9 @@ function openAdopt(){
   segButtons($('#adGender'),MOUSE_GENDERS,'adG',()=>{A.gender=SU.adG});
   const pd=()=>{A.pers=SU.adP;$('#adPersDesc').textContent=MOUSE_P[SU.adP]};
   segButtons($('#adPers'),Object.keys(MOUSE_P),'adP',pd);pd();
+  SU.adR='좋아!';
+  const rd=()=>$('#adRelDesc').textContent=SU.adR==='싫어!'?'코 킁킁 할 때 신경질을 내고, 마주 보고 일어서서 투닥거려요':'코 킁킁 인사를 하고, 찰딱 붙어서 같이 쉬어요';
+  segButtons($('#adRel'),['좋아!','싫어!'],'adR',rd);rd();
   const draw=()=>sizeCanvas(drawMouse($('#adPv'),{color:A.color,face:'happy'}),5);
   renderSwatches($('#adSw'),A.color,c=>{A.color=c;$('#adColor').value=c.toLowerCase();draw()});
   $('#adColor').oninput=e=>{A.color=e.target.value.toUpperCase();$$('#adSw .sw').forEach(s=>s.classList.remove('on'));draw()};
@@ -2254,6 +2309,7 @@ function renderProf(){
         <dt>성격</dt><dd>${esc(m.personality)} <span class="muted" style="font-size:12px">— ${MOUSE_P[m.personality]}</span></dd>
         <dt>나이</dt><dd>D+${ageDays(mm)}</dd>
         <dt>무게 · 호감도</dt><dd>${r1(st.weight)}g · ♥ ${Math.round(st.aff)}</dd>
+        ${i>0?`<dt>${esc(S.mice[0].mouse.name)}${jo(S.mice[0].mouse.name,'과')}</dt><dd>${relOf()==='dislike'?'싫어! 💢':'좋아! ♥'}</dd>`:''}
       </dl></div></div>`}).join('')+
   (S.doll?`<div class="section pbox"><h3>🧸 애착 인형</h3><dl class="kv"><dt>이름</dt><dd><span class="sw" style="display:inline-block;width:14px;height:14px;background:${dollInfo().color};vertical-align:middle"></span> ${esc(dollInfo().name)}</dd></dl></div>`:'')+
   `<div class="section pbox"><div class="h3row"><h3>🙋 주인님</h3><button class="pbtn sm butter" data-edit-owner>✏️ 수정</button></div>
@@ -2291,7 +2347,7 @@ function startLoops(){
       // 서 있는 동안 코를 치켜들었다 내렸다
       if(r.pose!=='lie'){
         if(now>r.standUntil||now<r.anim.until||r.moving){r.pose='lie';ch=true;r.inner.classList.remove('rise')}
-        else if(tick%3===0){r.pose=r.pose==='stand'?'stand2':'stand';ch=true}
+        else if(tick%3===0&&r.pose.startsWith('stand')){r.pose=r.pose==='stand'?'stand2':'stand';ch=true}
       }
       if(r.moving){if(tick%2===0){r.tail=!r.tail;ch=true}}       // 종종걸음 꼬리
       else{if(tick%5===0){r.breath=!r.breath;ch=true}if(tick%7===0){r.tail=!r.tail;ch=true}}
@@ -2463,6 +2519,7 @@ function prepState(raw){
     m.thoughtCtx=m.thoughtCtx||'idle';
   });
   if(!s.cageId)s.cageId=newCageId();
+  if(s.rel!=='dislike')s.rel='like';   // 두 마리의 관계 (예전 데이터는 좋아!)
   if(s.apples==null)s.apples=3;
   if(!s.deco)s.deco=defaultDeco();
   s.speed=1;
