@@ -636,6 +636,7 @@ const PATCH_NOTES=[
   {date:'2026-11-14',title:'멋찍이 모자',sections:[
     ['🆕 새 기능',[
       '상점 > 🎀 꾸미기에 파란 캡 모자 「멋찍이 모자」(호박씨 1개)가 생겼어요. 사과용 사과와 함께 쓰면 사과가 모자 위에 올라가요.',
+      '멋찍이 모자를 쓴 쥐를 들어 올려도 모자가 등이 아닌 머리에 귀를 덮고 씌워져 있어요.',
     ]],
   ]},
   {date:'2026-11-13',title:'쥐를 들어서 옮겨요',sections:[
@@ -720,7 +721,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611131754';
+const APP_VERSION='202611131800';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1106,8 +1107,8 @@ const ACC_ART={
     rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-7,j-rows.length+1,M[c]])}));
     return o})(),
 };
-/* 꾸미기 기준점 (템플릿 좌표): T 꼬리 시작(리본) · S 몸통 옆(흉터) · A 머리 위(사과 바닥 가운데) — 눈(안경)은 'e'를 찾아 써요 */
-const ANC_LIE={T:[3,13],S:[9,9],A:[19,4]},ANC_STAND={T:[3,18],S:[9,13],A:[15,4]},ANC_HOLD={T:[3,6],S:[10,4],A:[20,7]},ANC_BALL={T:[11,17],S:[12,6],A:[14,0]};
+/* 꾸미기 기준점 (템플릿 좌표): T 꼬리 시작(리본) · S 몸통 옆(흉터) · A 머리 위(사과 바닥 가운데) · H 모자 (없으면 눈 위 머리 윗선) — 눈(안경)은 'e'를 찾아 써요 */
+const ANC_LIE={T:[3,13],S:[9,9],A:[19,4]},ANC_STAND={T:[3,18],S:[9,13],A:[15,4]},ANC_HOLD={T:[3,6],S:[10,4],A:[20,7],H:[21,5]},ANC_BALL={T:[11,17],S:[12,6],A:[14,0]};
 const POSES={ball:{t:TPL_BALL,row:10,col:13,ball:true,wy:-1,anc:ANC_BALL},ballK:{t:TPL_BALL_K,row:10,col:13,ball:true,wy:-1,anc:ANC_BALL},lie:{t:TPL,row:10,col:10,anc:ANC_LIE},stand:{t:TPL_STAND,row:14,col:9,anc:ANC_STAND},stand2:{t:TPL_STAND2,row:14,col:9,anc:ANC_STAND},
   fightA:{t:TPL_FIGHT_A,row:14,col:9,anc:ANC_STAND},fightB:{t:TPL_FIGHT_B,row:14,col:9,anc:ANC_STAND},
   hold:{t:TPL_HOLD,row:2,col:11,anc:ANC_HOLD},holdK:{t:TPL_HOLD_KICK,row:2,col:11,anc:ANC_HOLD}};
@@ -1175,8 +1176,9 @@ function buildMouse(o={}){
     const GW=g[0].length;
     // 모자: 눈 칸에서 위로 올라가 머리 윗선을 찾고, 그 바로 위에 얹어요 (사과는 모자 위로)
     const headTop=()=>{const e=at('E');if(!e)return null;let y=e[1];while(y>0&&g[y-1][e[0]]!=='.')y--;return[e[0],y-1]};
-    const hatP=acc.includes('hat')?headTop():null;
-    if(hatP){const[hx,hy]=hatP,ey=at('E')[1];   // 모자 아래로 귀가 삐져나오지 않게: 머리 윗선은 이어 주고, 그 아래 분홍 귓속은 털색으로
+    const hatH=acc.includes('hat')?at('H'):null;   // 들어 올린 자세: 귀를 덮는 자리를 따로 정해 둬요
+    const hatP=acc.includes('hat')?(hatH||headTop()):null;
+    if(hatP&&!hatH){const[hx,hy]=hatP,ey=at('E')[1];   // 모자 아래로 귀가 삐져나오지 않게: 머리 윗선은 이어 주고, 그 아래 분홍 귓속은 털색으로
       for(let x=hx-7;x<=hx+4;x++){const t=g[hy+1]?.[x];if(x<=hx+2&&t&&t!=='.'||t==='p'||t==='P')g[hy+1][x]='k';
         for(let y=0;y<=hy;y++)if(g[y]?.[x]==='k')g[y][x]='.';                      // 모자 밖으로 솟은 귀 끝
         for(let y=hy+2;y<ey;y++)if(g[y]?.[x]==='p'||g[y]?.[x]==='P')g[y][x]='b'}}
