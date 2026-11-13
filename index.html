@@ -128,7 +128,7 @@ h3{font-size:16px;font-weight:400}
 .home-head .nk{font-size:13px;opacity:.7;margin-left:4px}
 .home-head .meta{display:flex;flex-wrap:wrap;justify-content:flex-end}
 
-.stage{--floor:46px;flex:1;min-height:170px;position:relative;overflow:hidden;
+.stage{--floor:46px;flex:1;min-height:170px;position:relative;overflow:hidden;isolation:isolate;   /* 쥐 · 말풍선의 z-index는 케이지 안에서만 */
   background:#F4F0DE;
 }
 /* 케이지 꾸미기 레이어: 벽지 → 바닥 → 창문(+커튼) → 쳇바퀴 → 애착 인형 → 쥐 */
@@ -384,6 +384,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
   .actions .pbtn small{font-size:10px}
   .thought-row .tbtns .pbtn{font-size:12px;padding:3px 6px}
   .thought-row{column-gap:6px}
+  body.overlay-view #v-home{visibility:hidden}   /* 다른 창 아래로 쥐가 비쳐 올라오지 않게 */
   .view:not(#v-home).active{position:fixed;inset:0;z-index:60;background:var(--bg);
     background-image:radial-gradient(rgba(66,47,18,.07) 1.5px,transparent 1.6px);background-size:18px 18px;animation:slideUp .2s steps(3)}
   .vhead{border-bottom:3px solid var(--ink);background:var(--card);padding:10px 12px}
@@ -655,6 +656,7 @@ const PATCH_NOTES=[
     ['🐛 고친 점',[
       '배고프거나 지친 쥐가 안경을 쓰면 눈이 안경알 아래로 처져 감긴 것처럼 보이던 문제를 고쳤어요. 지친 눈은 제자리에서 눈꺼풀이 반쯤 내려온 모양으로 보여요.',
       '속마음 줄의 상황 표시(예: 놀고 난 뒤)가 두 줄로 넘치던 문제를 고쳤어요. 좁은 화면에서는 꾸미기 버튼이 🎀만 보여요.',
+      '휴대폰에서 패치노트 · 설정 같은 창을 열어 둔 채 있다 보면 쥐가 그 창 위로 비쳐 돌아다니던 문제를 고쳤어요.',
     ]],
   ]},
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
@@ -697,7 +699,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130747';
+const APP_VERSION='202611130758';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1365,6 +1367,7 @@ function bindOnce(){
 }
 function closeDrawer(){$('#drawer').classList.remove('open')}
 function setView(v){view=v;$$('.view').forEach(s=>s.classList.toggle('active',s.id==='v-'+v));
+  document.body.classList.toggle('overlay-view',v!=='home');   // 휴대폰: 다른 창이 열려 있으면 아래 '나의 쥐'를 완전히 숨겨요
   $$('[data-nav]').forEach(b=>b.classList.toggle('on',b.dataset.nav===v));renderAll()}
 
 /* =========================================================
@@ -3123,7 +3126,7 @@ async function loadAccountGame(rec){
 function resetRuntime(){
   RT.forEach(r=>r.el.remove());RT.length=0;INT=null;
   $('#modal').classList.add('hidden');closeDrawer();
-  view='home';$$('.view').forEach(s=>s.classList.toggle('active',s.id==='v-home'));
+  view='home';$$('.view').forEach(s=>s.classList.toggle('active',s.id==='v-home'));document.body.classList.remove('overlay-view');
   $('#away').dataset.built='';$('#away').classList.add('hidden');shopTab='item';
 }
 function cageInfo(json){
