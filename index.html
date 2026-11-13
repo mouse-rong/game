@@ -589,6 +589,8 @@ const PATCH_NOTES=[
       '굴뚝 아마 있겠쥐(호박씨 3개): 별 · 잎 · 빨간 열매 가랜드에 빨강 · 초록 전구가 번갈아 반짝여요.',
       '시간이 지나면 쥐의 상태가 서서히 줄어요: 청결도는 1시간에 1칸, 포만감은 2시간에 3칸, 행복은 2시간에 1칸. 게임을 꺼 둔 동안에도 줄고, 모험 중에는 멈춰요.',
       '포만감은 1칸 아래로는 내려가지 않지만, 1칸이 되면 빨갛게 표시돼요. 놀아 주면 포만감이 1칸 줄어요.',
+      '먹이를 주면 무게가 0.5g씩 늘어요. 배에 5g이 차면 "배불러요!" 알림이 뜨고 더 못 먹어요. 1시간에 1g씩 소화돼서 다시 줄 수 있어요.',
+      '무게가 50g을 넘으면 공처럼 동그래져서, 걷는 대신 데구르르 천천히 굴러다녀요. 꼬리는 돌돌 말아 몸 위에 올려요.',
       '하이, 산타 커튼의 가랜드가 조금 작아져서 창문 위에 세 번 늘어져요.',
       '쮜리스마스 트리가 둥글게 겹친 3단 트리로 새로 단장했어요. 선물은 오른쪽에 작게 겹쳐 쌓았어요.',
     ]],
@@ -638,7 +640,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130126';
+const APP_VERSION='202611130149';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -961,7 +963,29 @@ const TPL_HOLD_SRC=[
 const TPL_HOLD_KICK_SRC=setPx(TPL_HOLD_SRC,[[11,9,'.'],[10,16,'.'],[11,15,'.'],[11,8,'P'],[10,17,'P'],[11,18,'p']]);
 const mirrorRows=t=>t.map(r=>[...r].reverse().join(''));
 const TPL_HOLD=mirrorRows(TPL_HOLD_SRC),TPL_HOLD_KICK=mirrorRows(TPL_HOLD_KICK_SRC);
-const POSES={lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
+/* 50g이 넘으면: 동그란 공 쥐 (꼬리는 돌돌 말아 몸 위에 겹쳐요) · 정사각형에 가깝게 가운데를 맞춰 굴릴 때 흔들리지 않게 */
+const BALL_W=50;
+const TPL_BALL=[
+"............kkk.....",
+".......kkkkkppk.....",
+".....kkbbbbbbPk.....",
+"....kbbbbbbbbbbk....",
+"....kbbbbbbbbbbk....",
+"...kbbbbbbbbbebbk...",
+"...ksbbbbbbbbbbbk...",
+"..ksbbbbbbbbbbbbbn..",
+"..ksbbbbbbbbbbbbbk..",
+"..ksbppbbbbbbbbbbk..",
+"...kpbbpbbbbbbbbk...",
+"...kpbPpbbbbbbbbk...",
+"....kpbbbbbbbbbk....",
+"....kspbbbbbbssk....",
+".....kkpssssskk.....",
+".......kkkkkk.......",
+".......p.....pp....."
+];
+const TPL_BALL_K=setPx(TPL_BALL,[[16,7,'.'],[16,6,'p'],[16,13,'.'],[15,15,'p']]);   // 들었을 때 버둥 프레임
+const POSES={ball:{t:TPL_BALL,row:8,col:9,ball:true},ballK:{t:TPL_BALL_K,row:8,col:9,ball:true},lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
   fightA:{t:TPL_FIGHT_A,row:14,col:9},fightB:{t:TPL_FIGHT_B,row:14,col:9},
   hold:{t:TPL_HOLD,row:2,col:11},holdK:{t:TPL_HOLD_KICK,row:2,col:11}};
 const MOUSE_DEFAULT='#32312F';
@@ -974,7 +998,8 @@ function mousePalette(base){
 function buildMouse(o={}){
   const{pose='lie',color=MOUSE_DEFAULT,weight=25,face='normal',twitch=false,breath=false,look=false,tail=false,
         dirty=false,foam=false,shine=false,plush=false}=o;
-  const PZ=POSES[pose]||POSES.lie;
+  const ball=!plush&&weight>BALL_W;
+  const PZ=ball?POSES[pose==='holdK'?'ballK':'ball']:(POSES[pose]||POSES.lie);
   const g=PZ.t.map(r=>r.split(''));
   const H=g.length,W=g[0].length;
   const get=(x,y)=>g[y]?.[x];
@@ -1001,25 +1026,26 @@ function buildMouse(o={}){
   // 꼬리 끝 살랑
   if(tail){const y=H-1,x=g[y].indexOf('p');if(x>=0){put(x,y,'.');put(x+2,y,'p')}}
   // 목욕 거품: 동글동글한 거품 도장을 등·머리 위에 하나씩
-  if(foam&&pose==='lie'){
+  if(foam&&pose==='lie'&&!ball){
     const BUB={L:[".OOO.","OWffO","OfffO","OffFO",".OOO."],M:[".OO.","OWfO","OfFO",".OO."],S:[".O.","OWO",".O."]};
     [['L',4,3],['L',8,3],['M',6,1],['S',11,1],['S',3,1]].forEach(([t,bx,by])=>
       BUB[t].forEach((row,dy)=>[...row].forEach((c,dx)=>{if(c!=='.')put(bx+dx,by+dy,c)})));
   }
   // 체중 & 숨쉬기 → 몸통 행/열 복제
-  const dc=clamp(Math.round((weight-25)/3),-2,5);
-  const dr=clamp(Math.round((weight-25)/6),-1,3)+(breath?1:0);
+  let dc=clamp(Math.round((weight-25)/3),-2,5);
+  let dr=clamp(Math.round((weight-25)/6),-1,3)+(breath?1:0);
+  if(ball)dc=dr=0;   // 공은 늘 같은 크기의 동그라미 (늘리면 모양이 찌그러져요)
   for(let i=0;i<dr;i++)g.splice(PZ.row,0,g[PZ.row].slice());
   for(let i=0;i>dr;i--)g.splice(PZ.row,1);
   for(let i=0;i<dc;i++)g.forEach(r=>r.splice(PZ.col,0,r[PZ.col]));
   for(let i=0;i>dc;i--)g.forEach(r=>r.splice(PZ.col,1));
   while(g.length&&g[0].every(c=>c==='.'))g.shift();
-  return{grid:g,C:mousePalette(color)};
+  return{grid:g,C:mousePalette(color),ball};
 }
 const K=2;   // 쥐 캔버스 내부 해상도 (도트 1칸 = 2×2) — 웃는 눈을 작게 그리기 위해
 function drawMouse(cv,opts={}){
-  const{grid,C}=buildMouse(opts);const h=grid.length,w=grid[0].length;
-  cv.width=w*K;cv.height=h*K;cv.gw=w;cv.gh=h;const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  const{grid,C,ball}=buildMouse(opts);const h=grid.length,w=grid[0].length;
+  cv.width=w*K;cv.height=h*K;cv.gw=w;cv.gh=h;cv.ball=ball;const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
   let hx=-1,hy=-1;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=grid[y][x];if(c==='.')continue;
     const X=opts.flip?w-1-x:x;if(c==='h'){hx=X;hy=y}
@@ -1256,6 +1282,7 @@ function renderAll(){
   // 행동 버튼
   $$('#actions .pbtn').forEach(b=>{b.disabled=!!S.adv});
   const sc=$('#snackCnt');if(sc)sc.textContent=`보유 ${S.inv.snack||0}`;
+  const fc=$('#feedCnt');if(fc){const b=bellyNow(S.mice[S.sel]);fc.textContent=`먹은 양 ${gfmt(b)}/${BELLY_MAX}g`}
   renderStage();
   if(view==='adv')renderAdv();
   if(view==='shop')renderShop();
@@ -1267,7 +1294,7 @@ function renderAll(){
 }
 function buildActions(){
   const A=[['feed','먹이주기','bowl','butter','포만감↑'],['snack','간식 주기','cheese','pink',''],['bath','목욕','bubble','sky','청결도↑'],['play','놀아주기','ball','mint','행복↑']];
-  $('#actions').innerHTML=A.map(([k,l,ic,c,sub])=>`<button class="pbtn ${c}" data-act="${k}">${ico(ic,'lg')}${l}<small ${k==='snack'?'id="snackCnt"':''}>${sub}</small></button>`).join('');
+  $('#actions').innerHTML=A.map(([k,l,ic,c,sub])=>`<button class="pbtn ${c}" data-act="${k}">${ico(ic,'lg')}${l}<small ${k==='snack'?'id="snackCnt"':k==='feed'?'id="feedCnt"':''}>${sub}</small></button>`).join('');
   $('#actions').onclick=e=>{const b=e.target.closest('[data-act]');if(b)act(b.dataset.act)};
 }
 
@@ -1334,7 +1361,7 @@ function startHold(cx,cy){
   d.on=true;clearTimeout(d.timer);
   if(INT&&(INT.a===r.i||INT.b===r.i))endInteraction(true);
   clearTimeout(r.animT);r.anim={face:null,until:0};
-  r.inner.classList.remove('walking','jump','happy','boing','shake','rise','tussle');
+  r.inner.classList.remove('walking','jump','happy','boing','shake','rise','tussle');rollReset(r,true);
   Object.assign(r,{state:'held',moving:false,after:null,goal:null,faceAs:null,standUntil:0,sniffUntil:Date.now()+1100,twitch:false,
     holdMode:Math.random()<.5?'calm':'kick',pose:'hold'});
   r.inner.classList.add(r.holdMode==='kick'?'hold-kick':'hold-calm');
@@ -1383,7 +1410,19 @@ function drawSprite(r){
   drawMouse(r.cv,{pose:r.pose,color:m.mouse.color,weight:st.weight,face:moodFace(r),twitch:r.twitch,breath:r.breath&&r.pose==='lie'&&!r.moving,
     look:r.look,tail:r.tail,dirty:st.clean<35&&!foam,foam,shine:!foam&&now<r.shineUntil&&r.twinkle,flip:r.dir<0});
   sizeCanvas(r.cv,pxScale);
+  if(!r.cv.ball&&r.rot)rollReset(r,true);
   placeSprite(r);
+}
+/* 공 쥐 굴리기: 지나간 거리만큼 캔버스를 돌려요 (반지름 ≈ 7.6칸) · 멈추면 바로 선 자세로 천천히 돌아와요 */
+function rollBy(r,dx){
+  r.rot=(r.rot||0)+dx/(7.6*pxScale);
+  r.cv.style.transition='none';r.cv.style.transform=`rotate(${r.rot}rad)`;
+}
+function rollReset(r,now){
+  if(!r.rot){r.cv.style.transform='';return}
+  const T=2*Math.PI,target=Math.round(r.rot/T)*T;
+  if(now){r.rot=0;r.cv.style.transition='none';r.cv.style.transform='';return}
+  r.cv.style.transition='transform .7s ease-out';r.cv.style.transform=`rotate(${target}rad)`;r.rot=target;
 }
 function placeSprite(r){
   const sc=pxScale,w=spriteW(r);
@@ -1397,8 +1436,8 @@ function placeSprite(r){
   else{r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(G.B+r.y)+'px'}
   r.el.style.zIndex=10+Math.round(G.D-r.y);              // 앞줄일수록 위에
   r.el.style.setProperty('--hx',(r.dir>0?64:36)+'%');     // 머리 쪽
-  const bodyC=(r.dir>0?12:r.cv.gw-13)*sc;
-  r.sh.style.width=(15*sc)+'px';r.sh.style.height=Math.max(5,Math.round(sc*.9))+'px';
+  const bodyC=(r.cv.ball?r.cv.gw/2:r.dir>0?12:r.cv.gw-13)*sc;
+  r.sh.style.width=((r.cv.ball?13:15)*sc)+'px';r.sh.style.height=Math.max(5,Math.round(sc*.9))+'px';
   r.sh.style.left=(bodyC-7.5*sc)+'px';r.sh.style.bottom=(4*sc-Math.round(sc*.6))+'px';
 }
 function drawStageMouse(){RT.forEach(r=>{if(S.mice[r.i]&&!S.mice[r.i].adv)drawSprite(r)})}
@@ -1469,7 +1508,8 @@ function setupStageResize(){
 
 /* ---------- 이동 · 랜덤 모션 ---------- */
 function walkTo(r,tx,ty,{fast=false,state='walk'}={}){
-  r.tx=tx;r.ty=clamp(ty,0,G.D);r.state=state;r.speed=pxScale*(fast?15:5+Math.random()*3);
+  r.tx=tx;r.ty=clamp(ty,0,G.D);r.state=state;
+  r.speed=r.cv?.ball?pxScale*(fast?6:3+Math.random()*1.5):pxScale*(fast?15:5+Math.random()*3);   // 공 쥐는 데구르르 굼뜨게
 }
 function stopMove(r,ms){
   if(INT&&(INT.a===r.i||INT.b===r.i))endInteraction(true);
@@ -1512,15 +1552,17 @@ function stageStep(dt){
     if(r.state==='walk'||r.state==='goto'){
       const dx=r.tx-r.x,dy=r.ty-r.y,dist=Math.hypot(dx,dy),step=r.speed*dt;
       if(dist<=step||dist<.5){
-        r.x=r.tx;r.y=r.ty;r.moving=false;r.inner.classList.remove('walking');
+        if(r.cv.ball)rollBy(r,r.tx-r.x);
+        r.x=r.tx;r.y=r.ty;r.moving=false;r.inner.classList.remove('walking');if(r.cv.ball)rollReset(r);
         if(r.state==='goto')r.state='arrived';
         else if(r.after){const a=r.after;r.after=null;r.dir=a.dir??r.dir;r.state='idle';r.until=now+a.ms;if(a.face){r.faceAs=a.face;r.faceUntil=r.until}}
         else{r.state='idle';r.until=now+300+Math.random()*1500}
         drawSprite(r);
       }else{
-        r.x+=dx/dist*step;r.y+=dy/dist*step;
+        const mx=dx/dist*step;r.x+=mx;r.y+=dy/dist*step;
         const nd=dx>0?1:-1;let redraw=false;
-        if(!r.moving){r.moving=true;r.pose='lie';r.faceAs=null;r.inner.classList.add('walking');redraw=true}
+        if(!r.moving){r.moving=true;r.pose='lie';r.faceAs=null;if(!r.cv.ball)r.inner.classList.add('walking');redraw=true}
+        if(r.cv.ball)rollBy(r,mx);
         if(Math.abs(dx)>1&&nd!==r.dir){r.dir=nd;redraw=true}
         redraw?drawSprite(r):placeSprite(r);
       }
@@ -1778,11 +1820,26 @@ function toast(msg){const t=document.createElement('div');t.className='toast';t.
 /* =========================================================
    행동 (기획서 4장)
 ========================================================= */
+/* 먹이 한 번 = 0.5g · 배에 5g이 차면 배불러서 더 못 먹어요 (1시간에 1g씩 소화돼서 다시 먹을 수 있어요) */
+const FEED_G=.5,BELLY_MAX=5,DIGEST_PER_HOUR=1;
+const bellyNow=m=>Math.max(0,(m.belly||0)-(Date.now()-(m.bellyAt||0))/3.6e6*DIGEST_PER_HOUR);
+const gfmt=v=>String(Math.round(v*10)/10);
+function fullAlert(m,justNow){
+  if(!S||!S.mice.includes(m))return;
+  const b=bellyNow(m),wait=Math.max(1,Math.ceil((b+FEED_G-BELLY_MAX)/DIGEST_PER_HOUR*60));
+  const i=S.mice.indexOf(m);squeak(pick(['찍... (배불러요)','찍! (더는 못 먹어요)','찌잉 (배가 빵빵)']),i);
+  modal('🍚 배불러요!',`<p>${esc(m.mouse.name)}${jo(m.mouse.name,'이')} ${justNow?'먹이를 5g 먹고':'배가 빵빵해서'} 더는 못 먹겠대요!</p>
+    <p class="note" style="margin:8px 0 0">먹은 양 ${gfmt(b)}/${BELLY_MAX}g · 소화되는 대로 다시 먹을 수 있어요 (약 ${wait}분 뒤)</p>`,[{label:'알겠어요',cls:'pink'}]);
+}
 function act(kind){
   if(S.adv){toast('모험 중에는 돌봐줄 수 없어요!');return}
   const p=S.mouse.personality;
   if(kind==='feed'){
+    const cm=S.mice[S.sel],b=bellyNow(cm);
+    if(b+FEED_G>BELLY_MAX+1e-6){fullAlert(cm);return}
+    cm.belly=r1(b+FEED_G);cm.bellyAt=Date.now();S.stats.weight=r1(S.stats.weight+FEED_G);
     addStat('full',20);playAnim('jump');particles('crumb',6);
+    if(cm.belly>=BELLY_MAX-1e-6)setTimeout(()=>fullAlert(cm,true),900);
   }else if(kind==='snack'){
     if(!(S.inv.snack>0)){toast('간식이 없어요. 상점에서 간식 꾸러미를 사 주세요!');return}
     invAdd('snack',-1);addStat('full',10);addStat('happy',10);S.stats.weight=r1(S.stats.weight+1);
