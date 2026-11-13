@@ -360,7 +360,15 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
   #game{grid-template-columns:1fr;grid-template-rows:50px 1fr}
   #side{display:none}
   #topbar{display:flex;align-items:center;justify-content:space-between;padding:0 max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));border-bottom:3px solid var(--ink);background:var(--card)}
-  #topbar .logo{font-size:19px}
+  #topbar{position:relative}
+  #topbar .logo{font-size:19px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none}   /* 제목은 정가운데 */
+  .tb-left{display:flex;align-items:center}
+  .quest-top{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;font-size:13px}
+  .quest-top .ico{width:18px;height:18px}
+  .quest-top.done{background:var(--mint)}
+  .quest-top.ready{background:var(--pink);animation:qblink 1s steps(1) infinite}
+  #topbar>div:last-child .chip{padding:2px 6px;margin:2px;font-size:13px!important}
+  #topbar>div:last-child .chip .ico{width:17px;height:17px}
   #v-home{display:flex!important;padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px));gap:6px;
     overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}   /* 화면이 아주 작으면 아래 버튼까지 스크롤 */
   #v-home>*{flex-shrink:0}
@@ -394,6 +402,8 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
 @keyframes slideDown{0%{transform:translateY(-20px);opacity:0}100%{transform:none;opacity:1}}
 @media (max-width:400px){
   .dress-btn .lbl{display:none}   /* 좁은 화면: 🎀만 */
+  #topbar .logo{font-size:17px}
+  #topbar .logo .ico{display:none}   /* 좁은 화면: 제목 글자만 */
   .actions .pbtn{font-size:13px}
   .stat .v{display:none}
 }
@@ -477,6 +487,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
   <aside id="side">
     <div class="logo"><img class="px ico lg" data-icon="doll" alt="">쥐 키우기</div>
     <div class="owner-card pbox" id="ownerCard"></div>
+    <button class="pbtn quest-bar" id="questBtn"></button>
     <div class="seedbox pbox"><img class="px ico" data-icon="seed" alt="">호박씨 <b id="seedSide" style="font-weight:400;margin-left:auto">0</b></div>
     <div class="seedbox pbox"><img class="px ico" data-icon="apple" alt="">사과 조각 <b id="appleSide" style="font-weight:400;margin-left:auto">0</b></div>
     <nav class="nav" id="navSide"></nav>
@@ -484,7 +495,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
   </aside>
 
   <header id="topbar">
-    <button class="pbtn sm" id="burger" aria-label="메뉴">☰</button>
+    <div class="tb-left"><button class="pbtn sm" id="burger" aria-label="메뉴">☰</button><button class="pbtn sm quest-top" id="questTop" aria-label="일일 퀘스트"></button></div>
     <div class="logo"><img class="px ico" data-icon="doll" alt="">쥐 키우기</div>
     <div style="display:flex"><div class="chip" style="font-size:14px"><img class="px ico" data-icon="seed" alt=""><span id="seedTop">0</span></div><div class="chip" style="font-size:14px"><img class="px ico" data-icon="apple" alt=""><span id="appleTop">0</span></div></div>
   </header>
@@ -492,7 +503,6 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
   <main id="main">
     <!-- 나의 쥐 -->
     <section class="view active" id="v-home">
-      <button class="pbtn quest-bar" id="questBtn"></button>
       <div class="home-head pbox">
         <div class="mtabs" id="hTabs"></div>
         <div class="meta" id="hMeta"></div>
@@ -640,6 +650,7 @@ const PATCH_NOTES=[
       '메리 크리 쥑쥑 벽지의 눈꽃 장식이 가운데 점이 콕 찍힌 작은 실선 마름모로 바뀌었어요.',
       '🎀 꾸미기 버튼이 속마음 읽기 옆으로 옮겨졌어요. 지금 고른 쥐를 꾸며요.',
       '휴대폰 화면에 맞춰 케이지가 더 커지고, 먹이주기 · 간식 · 목욕 · 놀아주기 버튼이 항상 화면 아래에 보여요.',
+      '일일 퀘스트가 휴대폰에서는 맨 위 메뉴 버튼 옆, 컴퓨터에서는 왼쪽 메뉴로 옮겨졌어요. 보상을 받을 수 있으면 분홍색으로 깜빡여요. 제목은 맨 위 가운데에 보여요.',
     ]],
     ['🐛 고친 점',[
       '배고프거나 지친 쥐가 안경을 쓰면 눈이 안경알 아래로 처져 감긴 것처럼 보이던 문제를 고쳤어요. 지친 눈은 제자리에서 눈꺼풀이 반쯤 내려온 모양으로 보여요.',
@@ -686,7 +697,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130743';
+const APP_VERSION='202611130747';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1343,7 +1354,7 @@ function bindOnce(){
   $('#drawer').onclick=e=>{if(e.target.id==='drawer'||e.target.closest('#drawerClose'))closeDrawer()};
   $('#readBtn').onclick=readThought;
   $('#dressBtn').onclick=()=>openDress(S.sel);   // 지금 고른 쥐 꾸미기
-  $('#questBtn').onclick=openQuests;
+  $('#questBtn').onclick=openQuests;$('#questTop').onclick=openQuests;
   $('#hTabs').onclick=e=>{const t=e.target.closest('[data-msel]');
     if(t){const i=+t.dataset.msel;setSel(i);if(S.mice[i]?.adv)setView('adv')}   // 모험 중인 쥐를 고르면 모험 화면으로
     if(e.target.closest('[data-adopt]'))openAdopt();
@@ -2121,6 +2132,9 @@ function renderQuestBtn(){
   b.classList.toggle('done',all);
   b.innerHTML=`${ico('quest','lg')}<span>${all?'퀘스트 모두 완료':'일일 퀘스트'}</span>
     <span class="qp">${questClaimable()?'<span class="chip qnew">보상 받기!</span>':''}<span class="chip">${qd}/${QUESTS.length}</span></span>`;
+  const t=$('#questTop');if(t){   // 휴대폰: 맨 위 메뉴 버튼 옆 작은 퀘스트 버튼
+    const ready=questClaimable();t.classList.toggle('done',all&&!ready);t.classList.toggle('ready',ready);
+    t.innerHTML=`${ico('quest')}<span>${qd}/${QUESTS.length}</span>`;t.title=ready?'퀘스트 보상 받기!':'일일 퀘스트'}
 }
 function openQuests(){
   rollQuests();const Q=S.quests,qd=questsDone(),all=qd===QUESTS.length;
