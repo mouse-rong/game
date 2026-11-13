@@ -580,6 +580,7 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '속마음 읽기를 다 쓴 뒤 읽기 버튼(🧪)을 누르면 보관함에 가지 않고 바로 쥑닥쥑닥 물약을 쓸 수 있어요. 물약이 없으면 상점으로 안내해요.',
       '상점 가구에 지붕 탭이 생겼어요. 지붕은 케이지 맨 위에 걸리는 배경이라 쥐를 가리지 않아요.',
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
       '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
@@ -633,7 +634,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611121721';
+const APP_VERSION='202611130113';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1230,8 +1231,8 @@ function renderAll(){
   if(S.adv){t.className='t';t.innerHTML='<span class="tx away-t">(모험 중이라 마음이 멀리 있어요)</span>';}
   else{const lab=`<span class="chip ctx">${multi?esc(m.name)+' · ':''}${CTX_LABEL[S.thoughtCtx]||'평소'}</span>`;
     t.className='t';t.innerHTML=S.thoughtOpen?`${lab}<span class="tx">“${esc(S.thought)}”</span>`:`${lab}<span class="tx secret">???</span>`}
-  $('#readBtn').textContent=`속마음 읽기 ${left}/${readsMax()}`;
-  $('#readBtn').disabled=!!S.adv||S.thoughtOpen||left<=0;
+  $('#readBtn').innerHTML=`속마음 읽기 ${left}/${readsMax()}`+(left<=0&&!S.adv?' 🧪':'');
+  $('#readBtn').disabled=!!S.adv||(S.thoughtOpen&&left>0);   // 0번 남았으면 눌러서 바로 물약을 쓸 수 있어요
   // 좋아하는 것
   $('#fav').innerHTML=`요즘 좋아하는 것: <b style="font-weight:400">${esc(S.fav)}</b>`;
   // 행동 버튼
@@ -1784,9 +1785,19 @@ function afterAction(ctx,canDrop){
   mouseThought(ctx);
   if(canDrop&&Math.random()<(odd?.1:.05)){S.seeds++;setTimeout(()=>{toast(`🌰 ${fill('{m이}')} 호박씨 1개를 물어왔어요!`);particles('seed',4)},700)}
 }
+/* 속마음 읽기 횟수를 다 썼을 때: 보관함에 가지 않고 바로 쥑닥쥑닥 물약 쓰기 */
+function openPotionModal(){
+  const n=S.inv.potion||0,read=!S.thoughtOpen;
+  const body=`<div class="reward-list"><div class="reward pbox"><img class="px ico lg" src="${iconURL('potion')}" alt="">쥑닥쥑닥 물약 <b style="font-weight:400">${n}개</b> 보유</div></div>
+    <p style="font-size:14px">오늘 속마음 읽기를 모두 썼어요.<br>${n>0?`물약을 쓰면 오늘 속마음 읽기가 1번 늘어나요.${read?' 쓰고 나서 바로 읽어 볼게요.':''}`:'물약이 없어요. 상점에서 호박씨 1개로 살 수 있어요.'}</p>`;
+  modal('🧪 쥑닥쥑닥 물약',body,n>0
+    ?[{label:'닫기'},{label:'물약 쓰기',cls:'pink',fn:()=>{useItem('potion');if(read&&readsLeft()>0)setTimeout(readThought,350)}}]
+    :[{label:'닫기'},{label:'상점 가기',cls:'pink',fn:()=>setView('shop')}]);
+}
 function readThought(){
-  if(S.adv||S.thoughtOpen)return;
-  if(readsLeft()<=0){toast('오늘은 더 읽을 수 없어요. 쥑닥쥑닥 물약을 써 보세요!');return}
+  if(S.adv)return;
+  if(readsLeft()<=0){openPotionModal();return}
+  if(S.thoughtOpen)return;
   S.reads.used++;S.thoughtOpen=true;questProgress('read');save();renderAll();
   const t=$('#thought .tx')||$('#thought');t.animate([{opacity:0,transform:'translateY(4px)'},{opacity:1,transform:'none'}],{duration:300,easing:'steps(3)'});
 }
