@@ -537,7 +537,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
     <section class="view" id="v-adv">
       <div class="vhead"><h2>🗺 모험</h2><button class="pbtn sm close" data-close>✕ 닫기</button></div>
       <div class="vbody">
-        <p class="note">쥐를 지역으로 보내 아이템을 얻어요. 모험 중에는 다른 행동을 할 수 없어요.<br>돌아오면 <b style="font-weight:400">스트레스 +15 · 청결도 -20 · 포만감 -30</b></p>
+        <p class="note">쥐를 지역으로 보내 아이템을 얻어요. 모험 중에는 다른 행동을 할 수 없어요.<br>돌아오면 <b style="font-weight:400">스트레스 +15 · 청결도 -20 · 포만감 -30 · 무게 -3g</b></p>
         <div id="advPick"></div>
         <div class="grid" id="regionList"></div>
       </div>
@@ -635,6 +635,7 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '놀아 주면 무게가 1g, 모험에서 돌아오면 무게가 3g 빠져요. (최소 12g)',
       '보관함에서 같은 아이템이 2개 이상이면, 몇 개 쓸지 고른 뒤 한꺼번에 쓸 수 있어요.',
       '설정에 💌 문의 · 버그 제보 칸이 생겼어요. 궁금한 점이나 버그를 알려 주세요.',
       '상점에 🎀 꾸미기 탭이 생겼어요. 악세사리 4종(각 호박씨 1개): 쥐리는 리본 · 쥐글쥐글 안경 · 사과용 사과 · 양아쮜.',
@@ -709,7 +710,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130905';
+const APP_VERSION='202611131250';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -2010,6 +2011,7 @@ function act(kind){
     playAnim('jump',p==='예민함'?'tired':null);bathFx();
   }else if(kind==='play'){
     addStat('stress',-20);addStat('happy',20*(p==='활발함'?1.5:1));addStat('aff',2*(p==='애교쟁이'?1.5:1));addStat('full',-10);   // 뛰어놀면 배가 1칸 꺼져요
+    S.stats.weight=r1(Math.max(12,S.stats.weight-1));   // 뛰어놀면 1g 빠져요
     playAnim('happy');particles('heart',6);
   }
   ownerTalk(kind);
@@ -2117,12 +2119,13 @@ function finishAdventure(i=S.sel){
     const fit=Math.min(n,invFree());invAdd(id,fit);lost+=n-fit;
   }
   addStat('stress',15);addStat('clean',-20);addStat('full',-30);
+  const wb=S.stats.weight;S.stats.weight=r1(Math.max(12,wb-3));   // 먼 길을 다녀와서 3g 빠져요
   afterAction('adv',false);save();renderAll();enterStage(i);setTimeout(()=>particles('heart',4,i),900);setTimeout(()=>ownerTalk('back'),300);
   const list=Object.entries(got).map(([id,n])=>`<div class="reward pbox">${ico(gIcon(id),'lg')}${gName(id)} ×${n}</div>`).join('');
   modal('모험에서 돌아왔어요!',`<p>${esc(fill('{m이}'))} <b style="font-weight:400">${r.name}</b>에서 돌아왔어요.</p>
     <div class="reward-list">${list}</div>
     ${lost?`<p class="note" style="color:#b0425a;opacity:1">보관함이 가득 차서 ${lost}개를 놓고 왔어요…</p>`:''}
-    <p class="note">스트레스 +15 · 청결도 -20 · 포만감 -30<br>꼬질꼬질해졌어요. 씻겨주고 밥을 챙겨 주세요!</p>`,[{label:'수고했어!',cls:'pink'}]);
+    <p class="note">스트레스 +15 · 청결도 -20 · 포만감 -30 · 무게 ${r1(wb)}g → ${S.stats.weight}g<br>꼬질꼬질해졌어요. 씻겨주고 밥을 챙겨 주세요!</p>`,[{label:'수고했어!',cls:'pink'}]);
 }
 
 /* =========================================================
