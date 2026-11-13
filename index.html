@@ -621,6 +621,9 @@ const PATCH_NOTES=[
       '커튼을 고르면 두 창문에 똑같이 달려요.',
       '메리 크리 쥑쥑 벽지의 눈꽃 장식이 가운데 점이 콕 찍힌 작은 실선 마름모로 바뀌었어요.',
     ]],
+    ['🐛 고친 점',[
+      '배고프거나 지친 쥐가 안경을 쓰면 눈이 안경알 아래로 처져 감긴 것처럼 보이던 문제를 고쳤어요. 지친 눈은 제자리에서 눈꺼풀이 반쯤 내려온 모양으로 보여요.',
+    ]],
   ]},
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
     ['🆕 새 기능',[
@@ -662,7 +665,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130716';
+const APP_VERSION='202611130722';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1072,7 +1075,7 @@ function buildMouse(o={}){
   // 눈
   if(face==='blink')put(ex,ey,'s');
   else if(face==='happy')put(ex,ey,'h');   // 눈 자리에 작은 웃는 눈(^)을 반 픽셀 크기로 그려요
-  else if(face==='tired'){put(ex,ey,'s');put(ex-1,ey+1,'e');put(ex,ey+1,'e')}
+  else if(face==='tired')put(ex,ey,'t');   // 지친 눈: 눈 자리 그대로, 눈꺼풀이 반쯤 내려온 모양 (안경을 써도 안경알 가운데)
   else if(look){put(ex,ey,'b');put(ex-1,ey,'e')}
   // 코 (씰룩: 코끝이 앞으로 1px 킁킁)
   let nX=nx;
@@ -1131,6 +1134,7 @@ function drawMouse(cv,opts={}){
   let hx=-1,hy=-1;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=grid[y][x];if(c==='.')continue;
     const X=opts.flip?w-1-x:x;if(c==='h'){hx=X;hy=y}
+    if(c==='t'){ctx.fillStyle=C.s;ctx.fillRect(X*K,y*K,K,1);ctx.fillStyle=C.e;ctx.fillRect(X*K,y*K+1,K,1);continue}   // 반쯤 감긴 눈 (위: 눈꺼풀 · 아래: 눈)
     ctx.fillStyle=c==='h'?C.b:(C[c]||c);ctx.fillRect(X*K,y*K,K,K)}
   if(hx>=0){ctx.fillStyle=C.e;   // 눈 칸 중앙 기준의 작은 ^ (가로 2칸 · 세로 1칸)
     [[0,-1],[1,-1],[-1,0],[2,0],[-1,1],[2,1]].forEach(([dx,dy])=>ctx.fillRect(hx*K+dx,hy*K+dy,1,1))}
