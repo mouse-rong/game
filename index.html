@@ -633,7 +633,7 @@ const PATCH_NOTES=[
       '가구를 적용하면 쥐가 호박씨를 물어올 확률이 칸마다 +2% 올라가요. 바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴를 모두 채우면 +10%!',
       '속마음 읽기를 다 쓴 뒤 읽기 버튼(🧪)을 누르면 보관함에 가지 않고 바로 쥑닥쥑닥 물약을 쓸 수 있어요. 물약이 없으면 상점으로 안내해요.',
       '쥑닥쥑닥 물약을 써도 지금 속마음이 바뀌지 않아요. 물약은 속마음 읽기 횟수를 1번 충전만 하고, 읽기는 원할 때 직접 눌러요. 최대 횟수(5)는 늘어나지 않고, 가득 찼을 때는 물약을 아껴 둬요.',
-      '찰딱 붙을 때 한쪽이 가려지던 순간이 없어졌어요. 앞장선 쥐는 제자리에서 돌아서고, 다른 쥐가 꼬리 쪽에서 다가와 앞줄에서 엉덩이 위로 포개져요.',
+      '찰딱 붙을 때 한쪽이 가려지던 순간이 없어졌어요. 앞장선 쥐는 제자리에서 돌아서고, 다른 쥐가 꼬리 쪽에서 다가와 앞줄에서 엉덩이 위로 포개져요. 헤어질 때도 앞줄 쥐가 왔던 쪽으로 돌아서 떠나서 서로 가리지 않아요.',
       '상점 가구에 지붕 탭이 생겼어요. 지붕은 케이지 맨 위에 걸리는 배경이라 쥐를 가리지 않아요.',
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
       '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
@@ -699,7 +699,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130758';
+const APP_VERSION='202611130815';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1764,6 +1764,7 @@ function startInteraction(){
     if(Math.abs(mv.x-mv.tx)<14*pxScale){mv.speed=pxScale*40;mv.dir=d;mv.lockDir=true;drawSprite(mv)}   // 이미 가까이 겹쳐 있으면 그 자리에서 바로 착
   }
   INT={type,grr:dislike,a:L.i,b:R.i,phase:'go',until:now+15000};
+  if(SNUG){INT.an=SNUG.an.i;INT.mv=SNUG.mv.i;INT.d=SNUG.d}   // 찰딱 역할 기억 (끝날 때 서로 가리지 않게 헤어지기)
   return true;
 }
 function pairSpot(){const A=RT[INT.a],B=RT[INT.b];
@@ -1809,12 +1810,22 @@ function stepInteraction(now){
   }
 }
 function endInteraction(cancel){
-  if(!INT)return;const now=Date.now(),ids=[INT.a,INT.b];INT=null;
+  if(!INT)return;const now=Date.now(),ids=[INT.a,INT.b],fin=INT;INT=null;
   ids.forEach(i=>{const r=RT[i];if(!r)return;
     if(['inter','arrived','goto'].includes(r.state)){r.state='idle';r.until=now+600+Math.random()*2400;r.moving=false;r.inner.classList.remove('walking')}
     if(r.pose.startsWith('fight')){r.pose='lie';r.standUntil=0;drawSprite(r)}
     r.inner.classList.remove('tussle');
     r.goal=null;r.faceAs=null;r.lockDir=false;r.zBoost=false;});
+  // 찰딱이 끝나면: 앞줄(뒤따르던) 쥐는 돌아서서 왔던 쪽으로 떠나고, 앞장선 쥐는 조금 더 쉬어요 → 앞줄 쥐가 앞장선 쥐 얼굴 위를 지나가지 않게
+  if(fin.type==='snug'&&fin.mv!=null&&fin.phase==='act'){
+    const an=RT[fin.an],mv=RT[fin.mv];
+    if(an&&mv&&mv.state==='idle'&&an.state==='idle'){
+      an.until=now+2500+Math.random()*2000;
+      mv.dir=-fin.d;drawSprite(mv);
+      walkTo(mv,clamp(mv.x-fin.d*(18+Math.random()*16)*pxScale,4,maxX(mv)),mv.y);
+      mv.after={ms:800+Math.random()*1200};
+    }
+  }
   nextInter=now+(cancel?8000:16000)+Math.random()*20000;
 }
 function interThought(ctx,ids){
