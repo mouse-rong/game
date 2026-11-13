@@ -640,7 +640,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130149';
+const APP_VERSION='202611130156';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -966,33 +966,38 @@ const TPL_HOLD=mirrorRows(TPL_HOLD_SRC),TPL_HOLD_KICK=mirrorRows(TPL_HOLD_KICK_S
 /* 50g이 넘으면: 동그란 공 쥐 (꼬리는 돌돌 말아 몸 위에 겹쳐요) · 정사각형에 가깝게 가운데를 맞춰 굴릴 때 흔들리지 않게 */
 const BALL_W=50;
 const TPL_BALL=[
-"............kkk.....",
-".......kkkkkppk.....",
-".....kkbbbbbbPk.....",
-"....kbbbbbbbbbbk....",
-"....kbbbbbbbbbbk....",
-"...kbbbbbbbbbebbk...",
-"...ksbbbbbbbbbbbk...",
-"..ksbbbbbbbbbbbbbn..",
-"..ksbbbbbbbbbbbbbk..",
-"..ksbppbbbbbbbbbbk..",
-"...kpbbpbbbbbbbbk...",
-"...kpbPpbbbbbbbbk...",
-"....kpbbbbbbbbbk....",
-"....kspbbbbbbssk....",
-".....kkpssssskk.....",
-".......kkkkkk.......",
-".......p.....pp....."
+".................kkk..........",
+"............kkkkkppk..........",
+"..........kkbbbbbbPk..........",
+".........kbbbbbbbbbbk.........",
+"........kbbbbbbbbbbbbk........",
+".......kbbbbbbbbbbbbbbk.......",
+"......kbbbbbbbbbbbbbbbbk......",
+"......kbbbbbbbbbbbbbbbbkk.....",
+".....ksbbbbbbbbbbbbebbbbmk....",
+".....ksbbbbbbbbbbbbbbbbbmmk...",
+".....ksbbbbbbbbbbbbbbbbbmmn...",
+".....ksbbbbbbbbbbbbbbbbbmk....",
+".....ksbbppbbbbbbbbbbbbbk.....",
+".....ksbpbbpbbbbbbbbbbbbk.....",
+"......kspbPpbbbbbbbbbbbk......",
+"......ksbpbbbbbbbbbbbbbk......",
+".......ksbpbbbbbbbbbbsk.......",
+"........ksbpbbbbbbbbsk........",
+".........ksspbbbbbssk.........",
+"..........kksssssskk..........",
+"............kkkkkk............",
+"...........p.....pp..........."
 ];
-const TPL_BALL_K=setPx(TPL_BALL,[[16,7,'.'],[16,6,'p'],[16,13,'.'],[15,15,'p']]);   // 들었을 때 버둥 프레임
-const POSES={ball:{t:TPL_BALL,row:8,col:9,ball:true},ballK:{t:TPL_BALL_K,row:8,col:9,ball:true},lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
+const TPL_BALL_K=setPx(TPL_BALL,[[21,11,'.'],[21,10,'p'],[21,17,'.'],[21,19,'p']]);   // 들었을 때 버둥 프레임
+const POSES={ball:{t:TPL_BALL,row:10,col:13,ball:true,wy:-1},ballK:{t:TPL_BALL_K,row:10,col:13,ball:true,wy:-1},lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
   fightA:{t:TPL_FIGHT_A,row:14,col:9},fightB:{t:TPL_FIGHT_B,row:14,col:9},
   hold:{t:TPL_HOLD,row:2,col:11},holdK:{t:TPL_HOLD_KICK,row:2,col:11}};
 const MOUSE_DEFAULT='#32312F';
 function mousePalette(base){
   const l=rgbToHsl(...hexToRgb(base))[2];
   return{k:'#000000',b:base,s:base.toUpperCase()===MOUSE_DEFAULT?'#2C2B29':shade(base,-(.015+.06*l)),
-    p:'#F5ABA8',P:'#D0837D',n:'#483632',e:'#000000',w:'#7D766E',d:'#8B6B45',
+    p:'#F5ABA8',P:'#D0837D',n:'#483632',e:'#000000',w:'#7D766E',d:'#8B6B45',m:l<.5?shade(base,.09):shade(base,-.05),   // m: 공 쥐 뽕주댕이
     f:'#FFFFFF',F:'#CFE9F6',O:'#8FC3DC',W:'#FFFFFF'};
 }
 function buildMouse(o={}){
@@ -1021,7 +1026,8 @@ function buildMouse(o={}){
   // 수염
   if(!noNose){
     const wp=twitch?[[1,-1],[2,-1],[1,1],[2,1]]:[[1,-1],[2,-2],[1,1],[2,2]];
-    wp.forEach(([dx,dy])=>{if(get(nX+dx,ny+dy)==='.')put(nX+dx,ny+dy,'w')});
+    const wY=ny+(PZ.wy||0);
+    wp.forEach(([dx,dy])=>{if(get(nX+dx,wY+dy)==='.')put(nX+dx,wY+dy,'w')});
   }
   // 꼬리 끝 살랑
   if(tail){const y=H-1,x=g[y].indexOf('p');if(x>=0){put(x,y,'.');put(x+2,y,'p')}}
@@ -1413,9 +1419,9 @@ function drawSprite(r){
   if(!r.cv.ball&&r.rot)rollReset(r,true);
   placeSprite(r);
 }
-/* 공 쥐 굴리기: 지나간 거리만큼 캔버스를 돌려요 (반지름 ≈ 7.6칸) · 멈추면 바로 선 자세로 천천히 돌아와요 */
+/* 공 쥐 굴리기: 지나간 거리만큼 캔버스를 돌려요 (반지름 약 10칸) · 멈추면 바로 선 자세로 천천히 돌아와요 */
 function rollBy(r,dx){
-  r.rot=(r.rot||0)+dx/(7.6*pxScale);
+  r.rot=(r.rot||0)+dx/(9.9*pxScale);
   r.cv.style.transition='none';r.cv.style.transform=`rotate(${r.rot}rad)`;
 }
 function rollReset(r,now){
@@ -1437,7 +1443,7 @@ function placeSprite(r){
   r.el.style.zIndex=10+Math.round(G.D-r.y);              // 앞줄일수록 위에
   r.el.style.setProperty('--hx',(r.dir>0?64:36)+'%');     // 머리 쪽
   const bodyC=(r.cv.ball?r.cv.gw/2:r.dir>0?12:r.cv.gw-13)*sc;
-  r.sh.style.width=((r.cv.ball?13:15)*sc)+'px';r.sh.style.height=Math.max(5,Math.round(sc*.9))+'px';
+  r.sh.style.width=((r.cv.ball?18:15)*sc)+'px';r.sh.style.height=Math.max(5,Math.round(sc*.9))+'px';
   r.sh.style.left=(bodyC-7.5*sc)+'px';r.sh.style.bottom=(4*sc-Math.round(sc*.6))+'px';
 }
 function drawStageMouse(){RT.forEach(r=>{if(S.mice[r.i]&&!S.mice[r.i].adv)drawSprite(r)})}
