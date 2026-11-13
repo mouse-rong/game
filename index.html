@@ -584,6 +584,7 @@ const PATCH_NOTES=[
       '가구를 적용하면 쥐가 호박씨를 물어올 확률이 칸마다 +2% 올라가요. 바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴를 모두 채우면 +10%!',
       '속마음 읽기를 다 쓴 뒤 읽기 버튼(🧪)을 누르면 보관함에 가지 않고 바로 쥑닥쥑닥 물약을 쓸 수 있어요. 물약이 없으면 상점으로 안내해요.',
       '쥑닥쥑닥 물약을 써도 지금 속마음이 바뀌지 않아요. 궁금했던 속마음을 그대로 읽을 수 있어요.',
+      '두 쥐가 찰딱 붙을 때, 겹친 채로 천천히 미끄러지며 한쪽이 가려지던 순간이 없어졌어요. 나란히 다가온 뒤 한 번에 착 붙어요.',
       '상점 가구에 지붕 탭이 생겼어요. 지붕은 케이지 맨 위에 걸리는 배경이라 쥐를 가리지 않아요.',
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
       '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
@@ -641,7 +642,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130159';
+const APP_VERSION='202611130229';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1513,9 +1514,9 @@ function setupStageResize(){
 }
 
 /* ---------- 이동 · 랜덤 모션 ---------- */
-function walkTo(r,tx,ty,{fast=false,state='walk'}={}){
+function walkTo(r,tx,ty,{fast=false,state='walk',speed=0}={}){
   r.tx=tx;r.ty=clamp(ty,0,G.D);r.state=state;
-  r.speed=r.cv?.ball?pxScale*(fast?6:3+Math.random()*1.5):pxScale*(fast?15:5+Math.random()*3);   // 공 쥐는 데구르르 굼뜨게
+  r.speed=speed||(r.cv?.ball?pxScale*(fast?6:3+Math.random()*1.5):pxScale*(fast?15:5+Math.random()*3));   // 공 쥐는 데구르르 굼뜨게
 }
 function stopMove(r,ms){
   if(INT&&(INT.a===r.i||INT.b===r.i))endInteraction(true);
@@ -1560,7 +1561,7 @@ function stageStep(dt){
       if(dist<=step||dist<.5){
         if(r.cv.ball)rollBy(r,r.tx-r.x);
         r.x=r.tx;r.y=r.ty;r.moving=false;r.inner.classList.remove('walking');if(r.cv.ball)rollReset(r);
-        if(r.state==='goto')r.state='arrived';
+        if(r.state==='goto'){r.state='arrived';if(r.goal?.dir)r.dir=r.goal.dir}   // 먼저 도착한 쥐도 바로 그쪽을 바라보고 기다려요
         else if(r.after){const a=r.after;r.after=null;r.dir=a.dir??r.dir;r.state='idle';r.until=now+a.ms;if(a.face){r.faceAs=a.face;r.faceUntil=r.until}}
         else{r.state='idle';r.until=now+300+Math.random()*1500}
         drawSprite(r);
@@ -1569,7 +1570,7 @@ function stageStep(dt){
         const nd=dx>0?1:-1;let redraw=false;
         if(!r.moving){r.moving=true;r.pose='lie';r.faceAs=null;if(!r.cv.ball)r.inner.classList.add('walking');redraw=true}
         if(r.cv.ball)rollBy(r,mx);
-        if(Math.abs(dx)>1&&nd!==r.dir){r.dir=nd;redraw=true}
+        if(Math.abs(dx)>1&&nd!==r.dir&&!r.lockDir){r.dir=nd;redraw=true}
         redraw?drawSprite(r):placeSprite(r);
       }
     }else if(r.state==='idle'||r.state==='stand'){
@@ -1609,7 +1610,7 @@ function startInteraction(){
   const[a,b]=home.slice(0,2).map(i=>RT[i]),now=Date.now();
   if(!a||!b||a.x===null||b.x===null||now<a.anim.until||now<b.anim.until)return false;
   if([a,b].some(r=>r.state==='held'||r.state==='drop'))return false;
-  const sc=pxScale,dislike=relOf()==='dislike';
+  const sc=pxScale,dislike=relOf()==='dislike';let FIN=null;
   const type=dislike?(Math.random()<.45?'nose':'fight'):(Math.random()<.5?'nose':'snug');   // 좋아!: 코인사 · 찰딱 / 싫어!: 신경질 코인사 · 투닥
   const L=a.x<=b.x?a:b,R=L===a?b:a;
   const y=clamp((a.y+b.y)/2+(Math.random()-.5)*G.D*.4,0,G.D);
@@ -1624,12 +1625,17 @@ function startInteraction(){
     const d=Math.random()<.5?1:-1,ahead=d>0?R:L,behind=ahead===R?L:R;
     const yb=Math.min(y,G.D-sc*1.6),bx=mid-spriteW(behind)/2-d*4*sc;
     P[behind.i]={x:bx,y:yb,dir:d};P[ahead.i]={x:bx+d*9*sc,y:yb+sc*1.6,dir:d};
+    // 다가갈 때는 서로 겹치지 않는 바로 옆까지만 → 둘 다 도착하면 '찰딱' 한 번에 붙어요 (겹친 채 미끄러지며 가려지는 시간 없애기)
+    const k=Math.max(0,(Math.min(spriteW(behind),spriteW(ahead))-9*sc)/2*.75);
+    FIN={[behind.i]:{...P[behind.i]},[ahead.i]:{...P[ahead.i]}};
+    P[behind.i]={...P[behind.i],x:bx-d*k};P[ahead.i]={...P[ahead.i],x:bx+d*(9*sc+k)};
   }
   const lo=Math.min(P[L.i].x,P[R.i].x)-4,hi=Math.max(P[L.i].x+spriteW(L),P[R.i].x+spriteW(R))-(stageW()-4);
   const shift=lo<0?-lo:hi>0?-hi:0;
   [L,R].forEach(r=>{const p=P[r.i];r.goal={dir:p.dir};r.after=null;r.faceAs=null;
     if(r.pose!=='lie'){r.pose='lie';drawSprite(r)}walkTo(r,p.x+shift,p.y,{state:'goto'})});
-  INT={type,grr:dislike,a:L.i,b:R.i,phase:'go',until:now+15000};
+  if(FIN)Object.values(FIN).forEach(p=>p.x+=shift);
+  INT={type,grr:dislike,a:L.i,b:R.i,phase:'go',until:now+15000,fin:FIN};
   return true;
 }
 function pairSpot(){const A=RT[INT.a],B=RT[INT.b];
@@ -1638,8 +1644,12 @@ function pairSpot(){const A=RT[INT.a],B=RT[INT.b];
 function stepInteraction(now){
   const a=RT[INT.a],b=RT[INT.b];
   if(INT.phase==='go'){
+    if(a.state==='arrived'&&b.state==='arrived'&&INT.fin){   // 찰딱: 바라보는 방향 그대로 한 번에 착 붙기
+      const f=INT.fin;INT.fin=null;
+      [a,b].forEach(r=>{const p=f[r.i];r.lockDir=true;r.dir=p.dir;walkTo(r,p.x,p.y,{state:'goto',speed:pxScale*45})});
+      return}
     if(a.state==='arrived'&&b.state==='arrived'){
-      INT.phase='act';
+      INT.phase='act';a.lockDir=b.lockDir=false;
       [a,b].forEach(r=>{r.dir=r.goal.dir;r.state='inter';r.pose='lie'});
       if(INT.type==='nose'&&INT.grr){                 // 싫어!: 코 킁킁 하다가 신경질
         INT.until=now+2600;a.sniffUntil=b.sniffUntil=now+900;
@@ -1680,7 +1690,7 @@ function endInteraction(cancel){
     if(['inter','arrived','goto'].includes(r.state)){r.state='idle';r.until=now+600+Math.random()*2400;r.moving=false;r.inner.classList.remove('walking')}
     if(r.pose.startsWith('fight')){r.pose='lie';r.standUntil=0;drawSprite(r)}
     r.inner.classList.remove('tussle');
-    r.goal=null;r.faceAs=null;});
+    r.goal=null;r.faceAs=null;r.lockDir=false;});
   nextInter=now+(cancel?8000:16000)+Math.random()*20000;
 }
 function interThought(ctx,ids){
