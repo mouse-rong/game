@@ -260,6 +260,18 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
 .actions .pbtn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 7px;font-size:14px}
 .actions .pbtn small{font-size:11px;opacity:.7;line-height:1}
 .set-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* 꾸미기 */
+.acc-prev{width:72px;height:56px;flex:none;display:flex;align-items:flex-end;justify-content:center;background:#F4F0DE;padding-bottom:4px;
+  box-shadow:0 -2px 0 0 var(--ink),0 2px 0 0 var(--ink),-2px 0 0 0 var(--ink),2px 0 0 0 var(--ink);margin:2px}
+.acc-prev img{image-rendering:pixelated;max-width:64px;max-height:50px}
+.dress-btn{padding:3px 7px;font-size:13px}
+.dress-stage{display:flex;align-items:flex-end;justify-content:center;height:150px;margin:4px 3px 10px;background:#F4F0DE;
+  background-image:linear-gradient(transparent 76%,#E8DDBE 76%);padding-bottom:14px}
+.dress-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dress-item{display:flex;align-items:center;gap:8px;text-align:left;font-size:14px;padding:6px 8px}
+.dress-item img{width:40px;height:30px;object-fit:contain;image-rendering:pixelated;flex:none}
+.dress-item.on{background:var(--pink)}
+.dress-item small{display:block;font-size:11px;opacity:.7}
 .pbtn.toggle{min-width:84px}
 .pbtn.toggle.on{background:var(--mint)}
 .coupon-row{display:flex;gap:6px;align-items:center}
@@ -503,10 +515,15 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
     <section class="view" id="v-shop">
       <div class="vhead"><h2>🏪 상점</h2><button class="pbtn sm close" data-close>✕ 닫기</button></div>
       <div class="vbody">
-        <div class="shop-tabs" id="shopTabs"><button class="pbtn on" data-stab="item">🧀 아이템</button><button class="pbtn" data-stab="furn">🛋 가구</button></div>
+        <div class="shop-tabs" id="shopTabs"><button class="pbtn on" data-stab="item">🧀 아이템</button><button class="pbtn" data-stab="furn">🛋 가구</button><button class="pbtn" data-stab="acc">🎀 꾸미기</button></div>
         <div id="shopItem">
           <div class="capbar pbox"><img class="px ico lg" data-icon="seed" alt=""><span>보유 호박씨 <b style="font-weight:400;font-size:18px" id="seedShop">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto">행동 시 <span id="seedRate">5%</span> 확률 / 모험 · 일일 퀘스트에서 획득</span></div>
           <div class="grid" id="shopList"></div>
+        </div>
+        <div id="shopAcc" class="hidden">
+          <div class="capbar pbox"><img class="px ico lg" data-icon="seed" alt=""><span>보유 호박씨 <b style="font-weight:400;font-size:18px" id="seedAcc">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto">한 번 사면 모든 쥐가 쓸 수 있어요 · 쥐마다 최대 2개 착용</span></div>
+          <div class="fcat">💍 악세사리</div>
+          <div class="grid" id="accList"></div>
         </div>
         <div id="shopFurn" class="hidden">
           <div class="capbar pbox"><img class="px ico lg" data-icon="apple" alt=""><span>사과 조각 <b style="font-weight:400;font-size:18px" id="appleShop">0</b>개</span><img class="px ico lg" data-icon="seed" alt="" style="margin-left:6px"><span>호박씨 <b style="font-weight:400;font-size:18px" id="seedFurn">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto" id="furnBonus">구매하면 바로 적용돼요</span></div>
@@ -581,6 +598,9 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '상점에 🎀 꾸미기 탭이 생겼어요. 악세사리 4종(각 호박씨 1개): 쥐리는 리본 · 빙글빙글 안경 · 사과용 사과 · 양아쮜.',
+      '꾸미기 아이템은 한 번 사면 케이지의 모든 쥐가 쓸 수 있어요. 나의 쥐에서 이름 옆 🎀 버튼을 누르면 미리보기를 보며 쥐마다 최대 2개까지 씌우고 벗길 수 있어요.',
+      '씌운 악세사리는 걷기 · 서기 · 투닥 · 들기 · 데구르르 굴러가기까지 쥐와 함께 움직여요.',
       '가구를 적용하면 쥐가 호박씨를 물어올 확률이 칸마다 +2% 올라가요. 바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴를 모두 채우면 +10%!',
       '속마음 읽기를 다 쓴 뒤 읽기 버튼(🧪)을 누르면 보관함에 가지 않고 바로 쥑닥쥑닥 물약을 쓸 수 있어요. 물약이 없으면 상점으로 안내해요.',
       '쥑닥쥑닥 물약을 써도 지금 속마음이 바뀌지 않아요. 물약은 속마음 읽기 횟수를 1번 충전만 하고, 읽기는 원할 때 직접 눌러요. 최대 횟수(5)는 늘어나지 않고, 가득 찼을 때는 물약을 아껴 둬요.',
@@ -642,7 +662,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130303';
+const APP_VERSION='202611130653';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -991,9 +1011,42 @@ const TPL_BALL=[
 "...........p.....pp..........."
 ];
 const TPL_BALL_K=setPx(TPL_BALL,[[21,11,'.'],[21,10,'p'],[21,17,'.'],[21,19,'p']]);   // 들었을 때 버둥 프레임
-const POSES={ball:{t:TPL_BALL,row:10,col:13,ball:true,wy:-1},ballK:{t:TPL_BALL_K,row:10,col:13,ball:true,wy:-1},lie:{t:TPL,row:10,col:10},stand:{t:TPL_STAND,row:14,col:9},stand2:{t:TPL_STAND2,row:14,col:9},
-  fightA:{t:TPL_FIGHT_A,row:14,col:9},fightB:{t:TPL_FIGHT_B,row:14,col:9},
-  hold:{t:TPL_HOLD,row:2,col:11},holdK:{t:TPL_HOLD_KICK,row:2,col:11}};
+/* 꾸미기 아이템 (악세사리) — 쥐마다 최대 2개 착용 · 한 번 사면 케이지의 모든 쥐가 쓸 수 있어요 */
+const ACCS=[
+  {id:'ribbon',name:'쥐리는 리본',price:1,desc:'몸통과 꼬리 사이에 묶는 얇은 빨간 리본'},
+  {id:'glasses',name:'빙글빙글 안경',price:1,desc:'얼굴에 쓰는 동글 안경 · 안경알은 반투명'},
+  {id:'apple',name:'사과용 사과',price:1,desc:'머리 위에 얹는 반짝반짝 빨간 사과 (이파리 1장)'},
+  {id:'scar',name:'양아쮜',price:1,desc:'몸통에 새긴 십자 흉터'},
+];
+const ACC_MAX=2;
+/* 액세서리 도트: [dx,dy,색] — 기준점에서 얼마나 떨어진 칸인지 (머리가 오른쪽을 볼 때 기준, 좌우 반전은 쥐와 함께) */
+const ACC_ART={
+  ribbon:[[-2,-1,'#F0545C'],[2,-1,'#F0545C'],[-2,0,'#E5323C'],[-1,0,'#E5323C'],[0,0,'#A61E28'],[1,0,'#E5323C'],[2,0,'#E5323C'],[-2,1,'#C42530'],[2,1,'#C42530']],   // ⋈ 나비 리본
+  scar:[[0,-2,'#EDA5A0'],[0,-1,'#EDA5A0'],[0,0,'#D9837E'],[0,1,'#EDA5A0'],[0,2,'#EDA5A0'],[-2,0,'#EDA5A0'],[-1,0,'#EDA5A0'],[1,0,'#EDA5A0'],[2,0,'#EDA5A0']],
+  glasses:(()=>{const F='#E2A93B',Fd='#B98328',L='rgba(205,235,255,.42)',W='rgba(255,255,255,.9)',o=[];
+    [[-1,-2],[0,-2],[1,-2],[-2,-1],[2,-1],[-2,0],[2,0],[-2,1],[2,1]].forEach(([x,y])=>o.push([x,y,F]));
+    [[-1,2],[0,2],[1,2]].forEach(([x,y])=>o.push([x,y,Fd]));
+    for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++)o.push([x,y,L]);          // 반투명 안경알
+    [[-1,-1],[0,-1],[1,0]].forEach(([x,y])=>o.push([x,y,W]));              // 빙글빙글 반짝
+    o.push([-3,-1,F],[-4,-1,F]);                                          // 안경다리 (귀 쪽)
+    return o})(),
+  apple:(()=>{const M={A:'#E43C3C',a:'#B5262C',h:'#FF8C8C',W:'#FFFFFF',t:'#6B4A2B',L:'#7CC46A',l:'#4E8F45'},o=[];
+    const rows=["....Ll.",
+                "...tLL.",
+                ".AA.AA.",
+                "AWhAAAa",
+                "AhAAAAa",
+                "AAAAAaa",
+                ".AAAaa.",
+                "..aaa.."];
+    rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-3,j-rows.length+1,M[c]])}));
+    return o})(),
+};
+/* 꾸미기 기준점 (템플릿 좌표): T 꼬리 시작(리본) · S 몸통 옆(흉터) · A 머리 위(사과 바닥 가운데) — 눈(안경)은 'e'를 찾아 써요 */
+const ANC_LIE={T:[3,13],S:[9,9],A:[19,4]},ANC_STAND={T:[3,18],S:[9,13],A:[15,4]},ANC_HOLD={T:[3,6],S:[10,4],A:[20,7]},ANC_BALL={T:[11,17],S:[12,6],A:[14,0]};
+const POSES={ball:{t:TPL_BALL,row:10,col:13,ball:true,wy:-1,anc:ANC_BALL},ballK:{t:TPL_BALL_K,row:10,col:13,ball:true,wy:-1,anc:ANC_BALL},lie:{t:TPL,row:10,col:10,anc:ANC_LIE},stand:{t:TPL_STAND,row:14,col:9,anc:ANC_STAND},stand2:{t:TPL_STAND2,row:14,col:9,anc:ANC_STAND},
+  fightA:{t:TPL_FIGHT_A,row:14,col:9,anc:ANC_STAND},fightB:{t:TPL_FIGHT_B,row:14,col:9,anc:ANC_STAND},
+  hold:{t:TPL_HOLD,row:2,col:11,anc:ANC_HOLD},holdK:{t:TPL_HOLD_KICK,row:2,col:11,anc:ANC_HOLD}};
 const MOUSE_DEFAULT='#32312F';
 function mousePalette(base){
   const l=rgbToHsl(...hexToRgb(base))[2];
@@ -1008,10 +1061,13 @@ function buildMouse(o={}){
   const PZ=ball?POSES[pose==='holdK'?'ballK':'ball']:(POSES[pose]||POSES.lie);
   const g=PZ.t.map(r=>r.split(''));
   const H=g.length,W=g[0].length;
+  const AG=g.map(r=>r.map(()=>''));   // 꾸미기 기준점 표시판 (몸통 늘리기 · 위쪽 빈 줄 정리를 똑같이 따라가요)
+  if(PZ.anc)for(const k in PZ.anc){const[x,y]=PZ.anc[k];if(AG[y]&&x<W)AG[y][x]+=k}
   const get=(x,y)=>g[y]?.[x];
   const put=(x,y,c)=>{if(y>=0&&y<H&&x>=0&&x<W)g[y][x]=c};
   const find=ch=>{for(let y=0;y<H;y++){const x=g[y].indexOf(ch);if(x>=0)return[x,y]}return[0,0]};
   const[ex,ey]=find('e'),[nx,ny]=find('n');
+  if(AG[ey])AG[ey][ex]+='E';
   // 얼룩 / 반짝
   if(dirty)[[8,9],[9,10],[13,11],[15,8],[11,7],[6,11]].forEach(([x,y])=>{if('bs'.includes(get(x,y)))put(x,y,'d')});
   if(shine)[[8,6],[9,6],[11,7],[17,6],[8,9],[9,12]].forEach(([x,y])=>{if('bs'.includes(get(x,y)))put(x,y,'W')});
@@ -1042,23 +1098,45 @@ function buildMouse(o={}){
   let dc=clamp(Math.round((weight-25)/3),-2,5);
   let dr=clamp(Math.round((weight-25)/6),-1,3)+(breath?1:0);
   if(ball)dc=dr=0;   // 공은 늘 같은 크기의 동그라미 (늘리면 모양이 찌그러져요)
-  for(let i=0;i<dr;i++)g.splice(PZ.row,0,g[PZ.row].slice());
-  for(let i=0;i>dr;i--)g.splice(PZ.row,1);
-  for(let i=0;i<dc;i++)g.forEach(r=>r.splice(PZ.col,0,r[PZ.col]));
-  for(let i=0;i>dc;i--)g.forEach(r=>r.splice(PZ.col,1));
-  while(g.length&&g[0].every(c=>c==='.'))g.shift();
-  return{grid:g,C:mousePalette(color),ball};
+  for(let i=0;i<dr;i++){g.splice(PZ.row,0,g[PZ.row].slice());AG.splice(PZ.row,0,AG[PZ.row].map(()=>''))}
+  for(let i=0;i>dr;i--){g.splice(PZ.row,1);AG.splice(PZ.row,1)}
+  for(let i=0;i<dc;i++){g.forEach(r=>r.splice(PZ.col,0,r[PZ.col]));AG.forEach(r=>r.splice(PZ.col,0,''))}
+  for(let i=0;i>dc;i--){g.forEach(r=>r.splice(PZ.col,1));AG.forEach(r=>r.splice(PZ.col,1))}
+  while(g.length&&g[0].every(c=>c==='.')){g.shift();AG.shift()}
+  // 꾸미기: 기준점에 액세서리 도트를 얹어요 (쥐와 함께 움직이고 좌우 반전돼요)
+  const ov=[];let padB=0;
+  const acc=plush?[]:(o.acc||[]).filter(k=>ACC_ART[k]).slice(0,ACC_MAX);
+  if(acc.length){
+    const at=k=>{for(let y=0;y<AG.length;y++){const x=AG[y].findIndex(v=>v.includes(k));if(x>=0)return[x,y]}return null};
+    const GW=g[0].length;
+    acc.forEach(id=>{const p=at({ribbon:'T',scar:'S',glasses:'E',apple:'A'}[id]);if(!p)return;
+      const px=ACC_ART[id].map(([dx,dy,c])=>[p[0]+dx,p[1]+dy,c]);
+      if(id==='apple'){            // 사과는 테두리를 둘러 또렷하게
+        const has=new Set(px.map(([x,y])=>x+','+y)),edge=new Set();
+        px.forEach(([x,y])=>[[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,b])=>{const X=x+a,Y=y+b,k=X+','+Y;
+          if(!has.has(k)&&!(g[Y]&&g[Y][X]&&g[Y][X]!=='.'))edge.add(k)}));
+        edge.forEach(k=>{const[x,y]=k.split(',').map(Number);ov.push([x,y,'k'])});
+      }
+      px.forEach(q=>ov.push(q))});
+    const minY=Math.min(0,...ov.map(q=>q[1]));
+    if(minY<0){const pad=-minY,blank=()=>Array(GW).fill('.');
+      for(let i=0;i<pad;i++)g.unshift(blank());ov.forEach(q=>q[1]+=pad);
+      if(ball){for(let i=0;i<pad;i++)g.push(blank());padB=pad}}   // 공은 위아래를 똑같이 늘려 굴러도 가운데가 그대로
+    for(let i=ov.length-1;i>=0;i--)if(ov[i][0]<0||ov[i][0]>=GW||ov[i][1]>=g.length)ov.splice(i,1);
+  }
+  return{grid:g,C:mousePalette(color),ball,ov,padB};
 }
 const K=2;   // 쥐 캔버스 내부 해상도 (도트 1칸 = 2×2) — 웃는 눈을 작게 그리기 위해
 function drawMouse(cv,opts={}){
-  const{grid,C,ball}=buildMouse(opts);const h=grid.length,w=grid[0].length;
-  cv.width=w*K;cv.height=h*K;cv.gw=w;cv.gh=h;cv.ball=ball;const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  const{grid,C,ball,ov,padB}=buildMouse(opts);const h=grid.length,w=grid[0].length;
+  cv.width=w*K;cv.height=h*K;cv.gw=w;cv.gh=h;cv.ball=ball;cv.padB=padB||0;const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
   let hx=-1,hy=-1;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=grid[y][x];if(c==='.')continue;
     const X=opts.flip?w-1-x:x;if(c==='h'){hx=X;hy=y}
     ctx.fillStyle=c==='h'?C.b:(C[c]||c);ctx.fillRect(X*K,y*K,K,K)}
   if(hx>=0){ctx.fillStyle=C.e;   // 눈 칸 중앙 기준의 작은 ^ (가로 2칸 · 세로 1칸)
     [[0,-1],[1,-1],[-1,0],[2,0],[-1,1],[2,1]].forEach(([dx,dy])=>ctx.fillRect(hx*K+dx,hy*K+dy,1,1))}
+  (ov||[]).forEach(([x,y,c])=>{const X=opts.flip?w-1-x:x;ctx.fillStyle=C[c]||c;ctx.fillRect(X*K,y*K,K,K)});   // 꾸미기
   return cv;
 }
 const sizeCanvas=(cv,sc)=>{const k=cv.gw?K:1;cv.style.width=cv.width/k*sc+'px';cv.style.height=cv.height/k*sc+'px'};
@@ -1239,7 +1317,8 @@ function bindOnce(){
   $('#questBtn').onclick=openQuests;
   $('#hTabs').onclick=e=>{const t=e.target.closest('[data-msel]');
     if(t){const i=+t.dataset.msel;setSel(i);if(S.mice[i]?.adv)setView('adv')}   // 모험 중인 쥐를 고르면 모험 화면으로
-    if(e.target.closest('[data-adopt]'))openAdopt()};
+    if(e.target.closest('[data-adopt]'))openAdopt();
+    const d=e.target.closest('[data-dress]');if(d)openDress(+d.dataset.dress)};
   $('#dollCv').addEventListener('pointerdown',e=>{e.preventDefault();pokeDoll()});
   setupStageResize();
   startLoops();
@@ -1265,8 +1344,8 @@ function renderAll(){
   // 홈 헤더
   const multi=S.mice.length>1;
   $('#hTabs').innerHTML=multi
-    ?S.mice.map((mm,i)=>`<button class="pbtn sm mtab ${i===S.sel?'on':''}" data-msel="${i}">${esc(mm.mouse.name)}${mm.adv?' 🗺':''}</button>`).join('')
-    :`<span class="nm">${esc(m.name)}</span><span class="nk">${m.nick?`“${esc(m.nick)}”`:''}</span><button class="pbtn sm butter add-mouse" data-adopt>＋입양 ${ico('seed')}${ADOPT_PRICE}</button>`;
+    ?S.mice.map((mm,i)=>`<button class="pbtn sm mtab ${i===S.sel?'on':''}" data-msel="${i}">${esc(mm.mouse.name)}${mm.adv?' 🗺':''}</button><button class="pbtn sm lav dress-btn" data-dress="${i}" title="${esc(mm.mouse.name)} 꾸미기">🎀</button>`).join('')
+    :`<span class="nm">${esc(m.name)}</span><span class="nk">${m.nick?`“${esc(m.nick)}”`:''}</span><button class="pbtn sm lav dress-btn" data-dress="0" title="꾸미기">🎀 꾸미기</button><button class="pbtn sm butter add-mouse" data-adopt>＋입양 ${ico('seed')}${ADOPT_PRICE}</button>`;
   $('#hMeta').innerHTML=`<span class="chip">D+${ageDays()}</span><span class="chip">${m.gender==='수컷'?'♂':'♀'} ${esc(m.gender)}</span><span class="chip">${esc(m.personality)}</span>`;
   // 스탯
   $('#stats').innerHTML=STAT_DEF.map(([k,lb,col])=>{
@@ -1415,7 +1494,7 @@ function drawSprite(r){
   const m=S.mice[r.i];if(!m)return;
   const now=Date.now(),foam=now<r.foamUntil,st=m.stats;
   drawMouse(r.cv,{pose:r.pose,color:m.mouse.color,weight:st.weight,face:moodFace(r),twitch:r.twitch,breath:r.breath&&r.pose==='lie'&&!r.moving,
-    look:r.look,tail:r.tail,dirty:st.clean<35&&!foam,foam,shine:!foam&&now<r.shineUntil&&r.twinkle,flip:r.dir<0});
+    look:r.look,tail:r.tail,dirty:st.clean<35&&!foam,foam,shine:!foam&&now<r.shineUntil&&r.twinkle,flip:r.dir<0,acc:m.acc});
   sizeCanvas(r.cv,pxScale);
   if(!r.cv.ball&&r.rot)rollReset(r,true);
   placeSprite(r);
@@ -1440,12 +1519,12 @@ function placeSprite(r){
     const top=clamp(r.hpy-h*.15,0,Math.max(0,sh-h-G.B));r.hb=sh-top-h;
     r.el.style.left=Math.round(r.hx)+'px';r.el.style.bottom=Math.round(r.hb)+'px';
   }else if(r.state==='drop'){r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(r.hb)+'px'}
-  else{r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(G.B+r.y)+'px'}
+  else{r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(G.B+r.y-(r.cv.padB||0)*sc)+'px'}   // padB: 공 쥐가 사과를 얹으면 아래에 생기는 빈 줄
   r.el.style.zIndex=10+Math.round(G.D-r.y)+(r.zBoost?40:0);   // 앞줄일수록 위에 (찰딱하러 다가오는 쥐는 늘 앞에)
   r.el.style.setProperty('--hx',(r.dir>0?64:36)+'%');     // 머리 쪽
   const bodyC=(r.cv.ball?r.cv.gw/2:r.dir>0?12:r.cv.gw-13)*sc;
   r.sh.style.width=((r.cv.ball?18:15)*sc)+'px';r.sh.style.height=Math.max(5,Math.round(sc*.9))+'px';
-  r.sh.style.left=(bodyC-7.5*sc)+'px';r.sh.style.bottom=(4*sc-Math.round(sc*.6))+'px';
+  r.sh.style.left=(bodyC-7.5*sc)+'px';r.sh.style.bottom=(4*sc-Math.round(sc*.6)+(r.cv.padB||0)*sc)+'px';
 }
 function drawStageMouse(){RT.forEach(r=>{if(S.mice[r.i]&&!S.mice[r.i].adv)drawSprite(r)})}
 function renderStage(){
@@ -1553,7 +1632,8 @@ function stageStep(dt){
     const r=RT[i];if(!r||r.x===null)continue;
     if(r.state==='drop'){                               // 놓으면 바닥으로 톡
       r.vy+=pxScale*520*dt;r.hb-=r.vy*dt;
-      if(r.hb<=G.B+r.y){r.hb=G.B+r.y;landHold(r)}else placeSprite(r);
+      const fl=G.B+r.y-(r.cv.padB||0)*pxScale;
+      if(r.hb<=fl){r.hb=fl;landHold(r)}else placeSprite(r);
       continue}
     if(r.state==='held'||now<r.anim.until)continue;
     if(r.state==='walk'||r.state==='goto'){
@@ -1917,7 +1997,7 @@ function renderAdv(){
       <div class="pbar"><i data-adv-bar></i></div><div data-adv-left style="font-size:13px"></div>
       ${ADV_BTNS}
       <p class="note" style="margin:2px 0 0">즉시 완료하면 지금 바로 보상을 받아요 · 취소하면 보상 없이 돌아와요<br>모험은 한 번에 1마리만 갈 수 있어요</p></div>`;
-    sizeCanvas(drawMouse($('#walkCvAdv'),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy'}),3);
+    sizeCanvas(drawMouse($('#walkCvAdv'),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy',acc:mm.acc}),3);
     updateAdvProgress();return;
   }
   $('#advPick').innerHTML=S.mice.length>1?`<div class="capbar pbox"><span>보낼 쥐</span>${S.mice.map((mm,i)=>
@@ -2404,7 +2484,8 @@ function buyFurn(id){
 ========================================================= */
 function renderShop(){
   $$('#shopTabs [data-stab]').forEach(b=>b.classList.toggle('on',b.dataset.stab===shopTab));
-  $('#shopItem').classList.toggle('hidden',shopTab!=='item');$('#shopFurn').classList.toggle('hidden',shopTab!=='furn');
+  $('#shopItem').classList.toggle('hidden',shopTab!=='item');$('#shopFurn').classList.toggle('hidden',shopTab!=='furn');$('#shopAcc').classList.toggle('hidden',shopTab!=='acc');
+  if(shopTab==='acc')renderAccShop();
   $('#shopTabs').onclick=e=>{const b=e.target.closest('[data-stab]');if(b&&b.dataset.stab!==shopTab){shopTab=b.dataset.stab;renderShop()}};
   if(shopTab==='furn')renderFurn();
   $('#shopList').innerHTML=SHOP.map(it=>{
@@ -2413,6 +2494,46 @@ function renderShop(){
       <div class="bottom"><span class="price">${ico('seed')}${it.price}</span>
       <button class="pbtn ${ownedDoll?'':'butter'}" data-buy="${it.id}" ${ownedDoll||S.seeds<it.price?'disabled':''}>${ownedDoll?(it.id==='adopt'?'입양 완료':S.doll?'배치 완료':'보유 중'):it.id==='adopt'?'입양':'구매'}</button></div></div>`}).join('');
   $('#shopList').onclick=e=>{const b=e.target.closest('[data-buy]');if(b)buy(b.dataset.buy)};
+}
+/* ---------- 꾸미기 (악세사리) ---------- */
+const accPrevCache={};
+function accPreview(id,color,weight){   // 그 아이템을 쓴 쥐 그림
+  const k=id+':'+color+':'+(weight>BALL_W?'b':'n');if(accPrevCache[k])return accPrevCache[k];
+  const cv=drawMouse(document.createElement('canvas'),{color,weight:weight>BALL_W?weight:25,face:'happy',acc:[id]});
+  return accPrevCache[k]=cv.toDataURL()}
+function renderAccShop(){
+  $('#seedAcc').textContent=S.seeds;S.accOwn=S.accOwn||{};
+  const m=S.mice[S.sel]||S.mice[0];
+  $('#accList').innerHTML=ACCS.map(a=>{const own=!!S.accOwn[a.id];
+    return`<div class="card pbox"><div class="top"><div class="acc-prev"><img src="${accPreview(a.id,m.mouse.color,m.stats.weight)}" alt=""></div><div><div class="nm">${a.name}</div><div class="ds">${a.desc}</div></div></div>
+      <div class="bottom"><span class="price">${ico('seed')}${a.price}</span>
+      <button class="pbtn ${own?'':'butter'}" data-accbuy="${a.id}" ${own||S.seeds<a.price?'disabled':''}>${own?'보유 중':'구매'}</button></div></div>`}).join('');
+  $('#accList').onclick=e=>{const b=e.target.closest('[data-accbuy]');if(b)buyAcc(b.dataset.accbuy)};
+}
+function buyAcc(id){
+  const a=ACCS.find(x=>x.id===id);if(!a||S.accOwn[id])return;
+  if(S.seeds<a.price){toast('호박씨가 부족해요!');return}
+  S.seeds-=a.price;S.accOwn[id]=true;save();renderAll();
+  toast(`🎀 ${a.name} 구매 완료! 나의 쥐에서 🎀 버튼으로 씌워 보세요`);
+}
+function openDress(i){
+  const mm=S.mice[i];if(!mm)return;mm.acc=mm.acc||[];S.accOwn=S.accOwn||{};
+  const owned=ACCS.filter(a=>S.accOwn[a.id]);
+  const list=()=>owned.map(a=>{const on=mm.acc.includes(a.id);
+    return`<button class="pbtn dress-item ${on?'on':''}" data-dacc="${a.id}"><img src="${accPreview(a.id,mm.mouse.color,mm.stats.weight)}" alt=""><span>${a.name}<small>${on?'착용 중 · 누르면 벗기':'누르면 착용'}</small></span></button>`}).join('');
+  const body=owned.length
+    ?`<div class="dress-stage pbox"><canvas id="dressCv"></canvas></div>
+      <p class="note" style="margin:0 2px 8px" id="dressNote"></p><div class="dress-list" id="dressList">${list()}</div>`
+    :`<div class="dress-stage pbox"><canvas id="dressCv"></canvas></div><p style="font-size:14px">아직 꾸미기 아이템이 없어요.<br>상점 > 🎀 꾸미기에서 리본 · 안경 · 사과 · 흉터를 살 수 있어요.</p>`;
+  modal(`🎀 ${esc(mm.mouse.name)} 꾸미기`,body,owned.length?[{label:'완료',cls:'pink'}]:[{label:'닫기'},{label:'상점 가기',cls:'pink',fn:()=>{shopTab='acc';setView('shop')}}]);
+  const draw=()=>{sizeCanvas(drawMouse($('#dressCv'),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy',acc:mm.acc}),5);
+    const n=$('#dressNote');if(n)n.textContent=`착용 ${mm.acc.length} / ${ACC_MAX}개 · 최대 ${ACC_MAX}개까지 함께 쓸 수 있어요`};
+  draw();
+  const L=$('#dressList');if(!L)return;
+  L.onclick=e=>{const b=e.target.closest('[data-dacc]');if(!b)return;const id=b.dataset.dacc,k=mm.acc.indexOf(id);
+    if(k>=0)mm.acc.splice(k,1);
+    else{if(mm.acc.length>=ACC_MAX){toast(`최대 ${ACC_MAX}개까지 착용할 수 있어요! 하나를 먼저 벗겨 주세요`);return}mm.acc.push(id)}
+    save();L.innerHTML=list();draw();drawStageMouse()};
 }
 function buy(id){
   if(id==='adopt'){openAdopt();return}
@@ -2677,7 +2798,7 @@ function renderProf(){
   `<div class="section pbox"><div class="h3row"><h3>🙋 주인님</h3><button class="pbtn sm butter" data-edit-owner>✏️ 수정</button></div>
     <dl class="kv"><dt>이름</dt><dd>${esc(o.name)}</dd><dt>성별</dt><dd>${esc(o.gender)}</dd><dt>나이</dt><dd>${o.age??'-'}</dd>
     <dt>성격</dt><dd>${esc(o.personality)} <span class="muted" style="font-size:12px">— ${OWNER_P[o.personality]}</span></dd><dt>MBTI</dt><dd>${esc(o.mbti)||'-'}</dd></dl></div>`;
-  S.mice.forEach((mm,i)=>sizeCanvas(drawMouse($('#profCv'+i),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy'}),5));
+  S.mice.forEach((mm,i)=>sizeCanvas(drawMouse($('#profCv'+i),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy',acc:mm.acc}),5));
   $('#profBody').onclick=e=>{if(e.target.closest('[data-edit-owner]')){openOwnerEdit();return}
     const del=e.target.closest('[data-cage-del]');if(del){confirmDeleteCage(+del.dataset.cageDel);return}
     const b=e.target.closest('[data-cage]');if(b){switchCage(+b.dataset.cage);return}
@@ -2886,6 +3007,7 @@ function prepState(raw){
     if(mm[m.mouse.personality])m.mouse.personality=mm[m.mouse.personality];
     if(!MOUSE_P[m.mouse.personality])m.mouse.personality='얌전함';
     m.thoughtCtx=m.thoughtCtx||'idle';
+    m.acc=Array.isArray(m.acc)?m.acc.filter(k=>ACC_ART[k]).slice(0,ACC_MAX):[];   // 꾸미기 착용 (최대 2개)
     if(!m.decayAt)m.decayAt=Date.now();                 // 예전 데이터: 지금부터 줄어들기 시작
     if(m.stats.full<STAT_MIN.full)m.stats.full=STAT_MIN.full;
   });
@@ -2893,6 +3015,7 @@ function prepState(raw){
   if(s.rel!=='dislike')s.rel='like';   // 두 마리의 관계 (예전 데이터는 좋아!)
   if(s.apples==null)s.apples=3;
   if(!s.deco)s.deco=defaultDeco();
+  s.accOwn=s.accOwn||{};   // 산 꾸미기 아이템 (케이지 공용)
   {const dd=defaultDeco();s.deco.own=s.deco.own||{};s.deco.on={...dd.on,...s.deco.on};s.deco.color={...dd.color,...s.deco.color}}   // 새 가구 칸(지붕 등) 기본값
   s.speed=1;
   return s;
