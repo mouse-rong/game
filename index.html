@@ -253,6 +253,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
 .stat .bar{flex:1;height:12px;display:flex;gap:2px;min-width:0}
 .stat .bar i{flex:1;background:#E7E1C8}
 .stat .v{width:28px;text-align:right;flex:none;font-size:12px}
+.stat.low .lb,.stat.low .v{color:#C8323A}
 .stat.num{justify-content:space-between}
 .stat.num b{font-weight:400;font-size:16px}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
@@ -586,6 +587,8 @@ const PATCH_NOTES=[
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
       '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
       '굴뚝 아마 있겠쥐(호박씨 3개): 별 · 잎 · 빨간 열매 가랜드에 빨강 · 초록 전구가 번갈아 반짝여요.',
+      '시간이 지나면 쥐의 상태가 서서히 줄어요: 청결도는 1시간에 1칸, 포만감은 2시간에 3칸, 행복은 2시간에 1칸. 게임을 꺼 둔 동안에도 줄고, 모험 중에는 멈춰요.',
+      '포만감은 1칸 아래로는 내려가지 않지만, 1칸이 되면 빨갛게 표시돼요. 놀아 주면 포만감이 1칸 줄어요.',
       '하이, 산타 커튼의 가랜드가 조금 작아져서 창문 위에 세 번 늘어져요.',
       '쮜리스마스 트리가 둥글게 겹친 3단 트리로 새로 단장했어요. 선물은 오른쪽에 작게 겹쳐 쌓았어요.',
     ]],
@@ -635,7 +638,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130119';
+const APP_VERSION='202611130126';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1100,7 +1103,19 @@ const READS_PER_DAY=5;
 const readsMax=()=>READS_PER_DAY+S.reads.bonus;
 const readsLeft=()=>{rollDay();return Math.max(0,readsMax()-S.reads.used)};
 const ageDays=(mm=S.mice[S.sel])=>Math.floor((Date.now()-mm.born)/864e5)+1;
-function addStat(k,v){const max=k==='aff'?999:100;S.stats[k]=clamp(Math.round((S.stats[k]+v)*10)/10,0,max)}
+function addStat(k,v){const max=k==='aff'?999:100;S.stats[k]=clamp(Math.round((S.stats[k]+v)*10)/10,STAT_MIN[k]||0,max)}
+/* 시간이 지나면 줄어드는 스탯 (1칸 = 10) — 청결도: 1시간에 1칸 · 포만감: 2시간에 3칸(최소 1칸까지만) · 행복: 2시간에 1칸
+   쥐마다 decayAt(마지막 계산 시각)을 저장해 두고, 게임을 꺼 둔 시간만큼도 다시 들어오면 한꺼번에 줄어요. 모험 중에는 멈춰요 */
+const DECAY_PER_HOUR={clean:10,full:15,happy:5};
+const STAT_MIN={full:10};
+function decayTick(now=Date.now()){
+  if(!S)return false;let ch=false;
+  S.mice.forEach(m=>{
+    if(!m.decayAt||m.adv||now<m.decayAt){m.decayAt=now;return}
+    const h=(now-m.decayAt)/3.6e6;
+    for(const k in DECAY_PER_HOUR){const lo=STAT_MIN[k]||0,v=m.stats[k];if(v>lo){m.stats[k]=Math.max(lo,v-DECAY_PER_HOUR[k]*h);ch=true}}
+    m.decayAt=now});
+  return ch}
 
 /* =========================================================
    셋업 화면
@@ -1204,7 +1219,7 @@ function setView(v){view=v;$$('.view').forEach(s=>s.classList.toggle('active',s.
    렌더링
 ========================================================= */
 function renderAll(){
-  if(!S)return;rollDay();
+  if(!S)return;rollDay();decayTick();
   const m=S.mouse,o=S.owner,st=S.stats;
   // 사이드 & 상단
   const oc=`<b>${esc(o.name)}</b> 주인님<br><span class="muted">${esc(o.personality)}${o.mbti?' · '+esc(o.mbti):''}${o.age?' · '+o.age+'세':''} · ${esc(o.gender)}</span>`;
@@ -1222,8 +1237,9 @@ function renderAll(){
   $('#hMeta').innerHTML=`<span class="chip">D+${ageDays()}</span><span class="chip">${m.gender==='수컷'?'♂':'♀'} ${esc(m.gender)}</span><span class="chip">${esc(m.personality)}</span>`;
   // 스탯
   $('#stats').innerHTML=STAT_DEF.map(([k,lb,col])=>{
-    const v=Math.round(st[k]),n=Math.round(v/10);
-    return`<div class="stat"><span class="lb">${lb}</span><div class="bar">${Array.from({length:10},(_,i)=>`<i style="${i<n?'background:'+col:''}"></i>`).join('')}</div><span class="v">${v}</span></div>`;
+    const v=Math.round(st[k]),n=Math.max(STAT_MIN[k]?1:0,Math.round(v/10)),low=STAT_MIN[k]&&v<=STAT_MIN[k];
+    if(low)col='#E0484F';                                   // 포만감이 바닥(1칸)이면 빨갛게
+    return`<div class="stat${low?' low':''}"><span class="lb">${lb}</span><div class="bar">${Array.from({length:10},(_,i)=>`<i style="${i<n?'background:'+col:''}"></i>`).join('')}</div><span class="v">${v}</span></div>`;
   }).join('')+
   `<div class="stat num"><span class="lb">무게</span><b>${r1(st.weight)}g</b></div>`+
   `<div class="stat num"><span class="lb">호감도</span><b>♥ ${Math.round(st.aff)}<span class="muted" style="font-size:11px"> / 999</span></b></div>`;
@@ -1775,7 +1791,7 @@ function act(kind){
     addStat('clean',30);addStat('stress',10*(p==='예민함'?1.5:p==='얌전함'?.5:1));
     playAnim('jump',p==='예민함'?'tired':null);bathFx();
   }else if(kind==='play'){
-    addStat('stress',-20);addStat('happy',20*(p==='활발함'?1.5:1));addStat('aff',2*(p==='애교쟁이'?1.5:1));
+    addStat('stress',-20);addStat('happy',20*(p==='활발함'?1.5:1));addStat('aff',2*(p==='애교쟁이'?1.5:1));addStat('full',-10);   // 뛰어놀면 배가 1칸 꺼져요
     playAnim('happy');particles('heart',6);
   }
   ownerTalk(kind);
@@ -1874,7 +1890,7 @@ function rollReward(table){let x=Math.random()*100;for(const[id,p]of table){if((
 function checkAdventure(){S.mice.forEach((m,i)=>{if(m.adv&&Date.now()>=m.adv.end)finishAdventure(i)})}
 function finishAdventure(i=S.sel){
   S.sel=i;
-  const r=REGIONS.find(x=>x.id===S.adv.id);S.adv=null;$('#away').dataset.built='';
+  const r=REGIONS.find(x=>x.id===S.adv.id);S.adv=null;S.mice[i].decayAt=Date.now();$('#away').dataset.built='';
   const got={};for(let i=0;i<r.rolls;i++){const id=rollReward(r.table);got[id]=(got[id]||0)+1}
   let lost=0;
   for(const[id,n]of Object.entries(got)){
@@ -2608,6 +2624,7 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')$('#modal').cl
    루프 (씰룩/깜빡임, 이동, 모험 진행)
 ========================================================= */
 function startLoops(){
+  setInterval(()=>{if(S&&!$('#game').classList.contains('hidden')&&decayTick())renderAll()},60000);   // 스탯이 서서히 줄어드는 걸 보여 줘요
   let tick=0;
   setInterval(()=>{
     if(!S)return;tick++;const now=Date.now();
@@ -2795,6 +2812,8 @@ function prepState(raw){
     if(mm[m.mouse.personality])m.mouse.personality=mm[m.mouse.personality];
     if(!MOUSE_P[m.mouse.personality])m.mouse.personality='얌전함';
     m.thoughtCtx=m.thoughtCtx||'idle';
+    if(!m.decayAt)m.decayAt=Date.now();                 // 예전 데이터: 지금부터 줄어들기 시작
+    if(m.stats.full<STAT_MIN.full)m.stats.full=STAT_MIN.full;
   });
   if(!s.cageId)s.cageId=newCageId();
   if(s.rel!=='dislike')s.rel='like';   // 두 마리의 관계 (예전 데이터는 좋아!)
