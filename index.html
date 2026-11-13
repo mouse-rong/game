@@ -594,6 +594,11 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
           <div class="auth-msg" id="cpMsg"></div>
         </div>
         <div class="section pbox">
+          <h3>💌 문의 · 버그 제보</h3>
+          <div class="set-row"><div class="muted" style="font-size:12px;opacity:.8">궁금한 점이나 이상한 점을 발견하면 알려 주세요.<br>버그는 화면을 찍어서 함께 보내 주시면 더 빨리 고칠 수 있어요.</div>
+            <a class="pbtn pink" id="setInquiry" href="https://forms.gle/SubStLEujtA6iwWJA" target="_blank" rel="noopener noreferrer" style="text-decoration:none;white-space:nowrap;color:var(--ink)">문의하기</a></div>
+        </div>
+        <div class="section pbox">
           <h3>👤 계정</h3>
           <div class="acct-box" data-acct></div>
         </div>
@@ -627,6 +632,7 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '설정에 💌 문의 · 버그 제보 칸이 생겼어요. 궁금한 점이나 버그를 알려 주세요.',
       '상점에 🎀 꾸미기 탭이 생겼어요. 악세사리 4종(각 호박씨 1개): 쥐리는 리본 · 쥐글쥐글 안경 · 사과용 사과 · 양아쮜.',
       '꾸미기 아이템은 한 번 사면 케이지의 모든 쥐가 쓸 수 있어요. 나의 쥐에서 이름 옆 🎀 버튼을 누르면 미리보기를 보며 쥐마다 최대 2개까지 씌우고 벗길 수 있어요.',
       '씌운 악세사리는 걷기 · 서기 · 투닥 · 들기 · 데구르르 굴러가기까지 쥐와 함께 움직여요.',
@@ -699,7 +705,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130815';
+const APP_VERSION='202611130819';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
