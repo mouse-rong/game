@@ -238,10 +238,10 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
   box-shadow:0 -3px 0 0 var(--ink),0 3px 0 0 var(--ink),-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink)}
 .pbar i{position:absolute;left:0;top:0;bottom:0;background:var(--pink2)}
 /* 윗줄: 💭 · 상황 라벨 · 읽기 버튼 / 아랫줄: 속마음(최대 2줄, 가로 전체) */
-.thought-row{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"ic lb btn" "tx tx tx";align-items:center;column-gap:8px;row-gap:3px;padding:6px 8px 8px 12px;flex:none}
+.thought-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"ic lb btn" "tx tx tx";align-items:center;column-gap:8px;row-gap:3px;padding:6px 8px 8px 12px;flex:none}
 .thought-row>span:first-child{grid-area:ic}
 .thought-row .t{display:contents}
-.thought-row .ctx{grid-area:lb;justify-self:start;font-size:11px;margin:0}
+.thought-row .ctx{grid-area:lb;justify-self:start;font-size:11px;margin:0;display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* 상황 라벨은 한 줄 (넘치면 …) */
 .thought-row .tx{grid-area:tx;font-size:14px;line-height:1.35;min-height:2.7em;word-break:keep-all;overflow-wrap:anywhere;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 2px}
 .thought-row .tbtns{grid-area:btn;display:flex;align-items:center;gap:0}
@@ -374,7 +374,8 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
   .actions .pbtn{padding:5px 3px 4px;gap:2px;font-size:13px}
   .actions .pbtn .ico.lg{width:24px;height:24px}
   .actions .pbtn small{font-size:10px}
-  .dress-btn{padding:3px 6px}
+  .thought-row .tbtns .pbtn{font-size:12px;padding:3px 6px}
+  .thought-row{column-gap:6px}
   .view:not(#v-home).active{position:fixed;inset:0;z-index:60;background:var(--bg);
     background-image:radial-gradient(rgba(66,47,18,.07) 1.5px,transparent 1.6px);background-size:18px 18px;animation:slideUp .2s steps(3)}
   .vhead{border-bottom:3px solid var(--ink);background:var(--card);padding:10px 12px}
@@ -392,6 +393,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
 @keyframes slideUp{0%{transform:translateY(30px);opacity:0}100%{transform:none;opacity:1}}
 @keyframes slideDown{0%{transform:translateY(-20px);opacity:0}100%{transform:none;opacity:1}}
 @media (max-width:400px){
+  .dress-btn .lbl{display:none}   /* 좁은 화면: 🎀만 */
   .actions .pbtn{font-size:13px}
   .stat .v{display:none}
 }
@@ -511,7 +513,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
       <div class="thought-row pbox">
         <span style="font-size:18px">💭</span>
         <div class="t" id="thought"></div>
-        <div class="tbtns"><button class="pbtn sm butter dress-btn" id="dressBtn" title="지금 고른 쥐 꾸미기">🎀 꾸미기</button><button class="pbtn sm lav" id="readBtn"></button></div>
+        <div class="tbtns"><button class="pbtn sm butter dress-btn" id="dressBtn" title="지금 고른 쥐 꾸미기" aria-label="꾸미기">🎀<span class="lbl"> 꾸미기</span></button><button class="pbtn sm lav" id="readBtn"></button></div>
       </div>
       <div class="stats pbox" id="stats"></div>
       <div class="actions" id="actions"></div>
@@ -641,6 +643,7 @@ const PATCH_NOTES=[
     ]],
     ['🐛 고친 점',[
       '배고프거나 지친 쥐가 안경을 쓰면 눈이 안경알 아래로 처져 감긴 것처럼 보이던 문제를 고쳤어요. 지친 눈은 제자리에서 눈꺼풀이 반쯤 내려온 모양으로 보여요.',
+      '속마음 줄의 상황 표시(예: 놀고 난 뒤)가 두 줄로 넘치던 문제를 고쳤어요. 좁은 화면에서는 꾸미기 버튼이 🎀만 보여요.',
     ]],
   ]},
   {date:'2026-11-12',title:'계정 · 꾸미기 · 두 마리 대규모 업데이트',sections:[
@@ -683,7 +686,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130738';
+const APP_VERSION='202611130743';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
