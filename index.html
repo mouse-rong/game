@@ -637,7 +637,8 @@ const PATCH_NOTES=[
   {date:'2026-11-14',title:'멋찍이 모자',sections:[
     ['🆕 새 기능',[
       '상점 > 🎀 꾸미기에 파란 캡 모자 「멋찍이 모자」(호박씨 1개)가 생겼어요. 사과용 사과와 함께 쓰면 사과가 모자 위에 올라가요.',
-      '찍찍 살롱에서 다른 쥐와의 관계(좋아! / 싫어!)도 다시 정할 수 있어요. 첫째 · 둘째 어느 쪽에서 바꿔도 돼요.',
+      '찍찍 살롱에서 다른 쥐와의 관계(좋아! / 싫어!)도 다시 정할 수 있어요. 이미 갖고 있는 이용권도 똑같이 돼요. 관계 칸은 이름 바로 아래에 있어요.',
+      '새 업데이트 안내에서 새로고침을 누르면 옛 화면이 다시 뜨지 않고 바로 새 버전으로 열려요.',
       '찰딱 붙을 때, 말하는 쥐가 친구 얼굴을 덮어 가리던 문제를 고쳤어요. 말풍선만 맨 위에 떠요.',
       '찰딱하러 오는 쥐는 친구 바로 뒤까지 와서 순식간에 찰딱 붙어요.',
       '멋찍이 모자를 쓴 쥐를 들어 올리면 모자가 머리 쪽으로 기울어져 귀를 덮고 눌러쓴 모양이 돼요.',
@@ -725,7 +726,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611131827';
+const APP_VERSION='202611131835';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -2022,7 +2023,9 @@ async function checkUpdate(){
     updateShown=true;
     const bar=document.createElement('div');bar.className='update-bar';
     bar.innerHTML='<span>✨ 새 업데이트가 있어요</span><button class="pbtn sm pink" type="button">새로고침</button>';
-    bar.querySelector('button').onclick=async()=>{try{if(S&&ACC){save();await flushSave()}}catch(e){}location.reload()};
+    bar.querySelector('button').onclick=async()=>{try{if(S&&ACC){save();await flushSave()}}catch(e){}
+      // GitHub Pages는 페이지를 몇 분 동안 캐시해서, 그냥 새로고침하면 옛 버전이 다시 뜰 수 있어요 → 주소에 버전을 붙여 새로 받아요
+      if(/github\.io$/.test(location.hostname)){const u=new URL(location.href);u.searchParams.set('v',v);location.replace(u.toString())}else location.reload()};
     document.body.appendChild(bar);
   }catch(e){}
 }
@@ -2806,11 +2809,11 @@ function openSalon(){
   modal(`✂ 찍찍 살롱 · ${esc(m.name)}`,`<div class="preview pbox" style="height:130px;margin-bottom:10px"><canvas id="salonCv"></canvas></div>
     <div class="row2"><div><label class="f">이름 *</label><input class="input" id="salName" maxlength="10" value="${esc(m.name)}"></div>
       <div><label class="f">애칭</label><input class="input" id="salNick" maxlength="10" value="${esc(m.nick)}"></div></div>
+    ${other?`<label class="f">${esc(other)}${jo(other,'과')}의 관계</label><div class="seg" id="salRel"></div><div class="pdesc" id="salRelDesc"></div>`:''}
     <label class="f">털 색상</label><div class="swatches" id="salSw"></div>
     <div class="colorrow"><input type="color" id="salColor" value="${col.toLowerCase()}"><span class="muted" style="font-size:12px">직접 고르기</span></div>
     <label class="f">성별</label><div class="seg" id="salGender"></div>
     <label class="f">성격 <span class="muted">(속마음 · 찍찍 말풍선이 바뀌어요)</span></label><div class="seg" id="salPers"></div><div class="pdesc" id="salPersDesc"></div>
-    ${other?`<label class="f">${esc(other)}${jo(other,'과')}의 관계</label><div class="seg" id="salRel"></div><div class="pdesc" id="salRelDesc"></div>`:''}
     <p class="note" style="margin-top:10px">적용하면 이용권 1장이 사용돼요.</p>`,
     [{label:'나중에'},{label:'적용하기',cls:'pink',fn:()=>{
       const nm=$('#salName').value.trim();if(!nm){toast('이름을 입력해 주세요!');return false}
@@ -2826,7 +2829,7 @@ function openSalon(){
       }else toast('변신 완료! 반짝반짝 ✨');
       if(relChanged)setTimeout(()=>toast(newRel==='dislike'?`💢 이제 ${other}${jo(other,'과')} 서로 싫어! 해요`:`♥ 이제 ${other}${jo(other,'과')} 서로 좋아! 해요`),persChanged?1400:900);
     }}]);
-  const draw=()=>sizeCanvas(drawMouse($('#salonCv'),{color:col,weight:S.stats.weight,face:'happy'}),6);
+  const draw=()=>sizeCanvas(drawMouse($('#salonCv'),{color:col,weight:S.stats.weight,face:'happy',acc:S.mice[S.sel].acc||[]}),6);   // 쓰고 있는 꾸미기도 함께
   renderSwatches($('#salSw'),col,c=>{col=c;$('#salColor').value=c.toLowerCase();draw()});
   $('#salColor').oninput=e=>{col=e.target.value.toUpperCase();$$('#salSw .sw').forEach(s=>s.classList.remove('on'));draw()};
   segButtons($('#salGender'),MOUSE_GENDERS,'slG');
