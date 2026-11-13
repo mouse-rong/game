@@ -160,7 +160,8 @@ h3{font-size:16px;font-weight:400}
 .fsw .sw{width:22px;height:22px}
 .fpick{width:30px;height:26px;border:0;padding:0;background:none;cursor:pointer;margin-left:4px}
 .mouse-wrap{position:absolute;left:0;bottom:0}
-.mouse-wrap.talking{z-index:45!important}
+/* 말풍선은 쥐 몸과 따로 맨 위 층에 띄워요 → 말하는 쥐가 옆 쥐(찰딱 중인 친구)를 덮어 가리지 않게 */
+.sq-wrap{position:absolute;left:0;bottom:0;z-index:60;pointer-events:none}
 .mouse-wrap .shadow{position:absolute;background:rgba(66,47,18,.13)}
 .mouse-inner.walking canvas{animation:bob .22s steps(1) infinite}
 .mouse-inner.tussle canvas{animation:tussle .3s steps(1) infinite}
@@ -636,6 +637,8 @@ const PATCH_NOTES=[
   {date:'2026-11-14',title:'멋찍이 모자',sections:[
     ['🆕 새 기능',[
       '상점 > 🎀 꾸미기에 파란 캡 모자 「멋찍이 모자」(호박씨 1개)가 생겼어요. 사과용 사과와 함께 쓰면 사과가 모자 위에 올라가요.',
+      '찰딱 붙을 때, 말하는 쥐가 친구 얼굴을 덮어 가리던 문제를 고쳤어요. 말풍선만 맨 위에 떠요.',
+      '찰딱하러 오는 쥐는 친구 바로 뒤까지 와서 순식간에 찰딱 붙어요.',
       '멋찍이 모자를 쓴 쥐를 들어 올리면 모자가 머리 쪽으로 기울어져 귀를 덮고 눌러쓴 모양이 돼요.',
     ]],
   ]},
@@ -721,7 +724,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611131809';
+const APP_VERSION='202611131825';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1490,10 +1493,11 @@ function ensureSprites(){
   const st=$('#stage');
   while(RT.length<S.mice.length){
     const i=RT.length,el=document.createElement('div');el.className='mouse-wrap';
-    el.innerHTML='<div class="shadow"></div><div class="squeak hidden"></div><div class="sel-mark"></div><div class="mouse-inner"><canvas></canvas></div>';
-    st.appendChild(el);
+    el.innerHTML='<div class="shadow"></div><div class="sel-mark"></div><div class="mouse-inner"><canvas></canvas></div>';
+    const sw=document.createElement('div');sw.className='sq-wrap';sw.innerHTML='<div class="squeak hidden"></div>';
+    st.appendChild(el);st.appendChild(sw);
     const now=Date.now();
-    const r={i,el,inner:el.querySelector('.mouse-inner'),cv:el.querySelector('canvas'),sq:el.querySelector('.squeak'),sh:el.querySelector('.shadow'),
+    const r={i,el,inner:el.querySelector('.mouse-inner'),cv:el.querySelector('canvas'),sw,sq:sw.querySelector('.squeak'),sh:el.querySelector('.shadow'),
       x:null,y:G.D*(i?.7:.3),dir:i?-1:1,state:'idle',until:now+1500+i*1800,tx:0,ty:0,speed:0,goal:null,after:null,moving:false,
       pose:'lie',standUntil:0,twitch:false,burst:0,nextBurst:now+600,breath:false,blink:false,nextBlink:now+2000+Math.random()*2000,
       look:false,nextLook:now+5000+Math.random()*4000,tail:false,twinkle:false,sniffUntil:0,anim:{face:null,until:0},
@@ -1616,6 +1620,8 @@ function placeSprite(r){
   else{r.el.style.left=Math.round(r.x)+'px';r.el.style.bottom=Math.round(G.B+r.y-(r.cv.padB||0)*sc)+'px'}   // padB: 공 쥐가 사과를 얹으면 아래에 생기는 빈 줄
   r.el.style.zIndex=10+Math.round(G.D-r.y)+(r.zBoost?40:0);   // 앞줄일수록 위에 (찰딱하러 다가오는 쥐는 늘 앞에)
   r.el.style.setProperty('--hx',(r.dir>0?64:36)+'%');     // 머리 쪽
+  const sw=r.sw.style;sw.left=r.el.style.left;sw.bottom=r.el.style.bottom;sw.width=r.cv.style.width;sw.height=r.cv.style.height;   // 말풍선 층도 같은 자리로
+  sw.setProperty('--hx',(r.dir>0?64:36)+'%');
   const bodyC=(r.cv.ball?r.cv.gw/2:r.dir>0?12:r.cv.gw-13)*sc;
   r.sh.style.width=((r.cv.ball?18:15)*sc)+'px';r.sh.style.height=Math.max(5,Math.round(sc*.9))+'px';
   r.sh.style.left=(bodyC-7.5*sc)+'px';r.sh.style.bottom=(4*sc-Math.round(sc*.6)+(r.cv.padB||0)*sc)+'px';
@@ -1629,7 +1635,7 @@ function renderStage(){
   $('#fav').classList.toggle('hidden',allAway);
   RT.forEach(r=>{
     const m=S.mice[r.i],away=!!m.adv;
-    r.el.classList.toggle('hidden',away);
+    r.el.classList.toggle('hidden',away);r.sw.classList.toggle('hidden',away);
     r.el.classList.toggle('sel',r.i===S.sel&&home.length>1);
     if(away)return;
     r.y=clamp(r.y,0,G.D);
@@ -1802,7 +1808,10 @@ function startInteraction(){
     const first=Math.random()<.5?a:b,pl=plan(first,first===a?b:a)||plan(first===a?b:a,first);
     if(!pl)return false;
     P[pl.an.i]={x:pl.an.x,y:pl.ay,dir:pl.d};P[pl.mv.i]={x:pl.fx,y:pl.ay-sc*2,dir:pl.d};
-    SNUG={an:pl.an,mv:pl.mv,d:pl.d};
+    // 대기 자리: 뒤따르는 쥐의 코끝이 앞장선 쥐 엉덩이에 막 닿기 직전 → 여기까진 아무도 안 겹치고, 남은 거리는 순식간에 찰딱!
+    const[nm,wm]=noseCol(pl.mv.i),an=pl.an,mv=pl.mv;
+    const sx=pl.d>0?an.x+3*sc-(nm+1)*sc:an.x+spriteW(an)-3*sc-(wm-1-nm)*sc;
+    SNUG={an,mv,d:pl.d,sx:clamp(sx,4,maxX(mv)),fx:pl.fx,fy:pl.ay-sc*2};
   }
   const lo=Math.min(P[L.i].x,P[R.i].x)-4,hi=Math.max(P[L.i].x+spriteW(L),P[R.i].x+spriteW(R))-(stageW()-4);
   const shift=SNUG?0:lo<0?-lo:hi>0?-hi:0;
@@ -1810,11 +1819,12 @@ function startInteraction(){
     if(r.pose!=='lie'){r.pose='lie';drawSprite(r)}walkTo(r,p.x+shift,p.y,{state:'goto'})});
   if(SNUG){const{an,mv,d}=SNUG;
     an.dir=d;an.lockDir=true;drawSprite(an);              // 앞장선 쥐: 바로 그쪽을 보고 제자리에
-    mv.zBoost=true;mv.speed=pxScale*(mv.cv.ball?6:12);      // 다가오는 쥐: 늘 앞줄에 그려지고, 조금 서둘러 와요
-    if(Math.abs(mv.x-mv.tx)<14*pxScale){mv.speed=pxScale*40;mv.dir=d;mv.lockDir=true;drawSprite(mv)}   // 이미 가까이 겹쳐 있으면 그 자리에서 바로 착
+    mv.zBoost=true;                                         // 다가오는 쥐: 늘 앞줄에 그려져요
+    if(d*(mv.x-SNUG.sx)>0){mv.speed=pxScale*(mv.cv.ball?30:60);mv.dir=d;mv.lockDir=true;drawSprite(mv)}   // 이미 대기 자리보다 가까우면 그대로 바로 찰딱
+    else{walkTo(mv,SNUG.sx,SNUG.fy,{state:'goto',speed:pxScale*(mv.cv.ball?6:12)});SNUG.dash=true}   // 먼저 대기 자리까지 (겹치지 않게)
   }
   INT={type,grr:dislike,a:L.i,b:R.i,phase:'go',until:now+15000};
-  if(SNUG){INT.an=SNUG.an.i;INT.mv=SNUG.mv.i;INT.d=SNUG.d}   // 찰딱 역할 기억 (끝날 때 서로 가리지 않게 헤어지기)
+  if(SNUG){INT.an=SNUG.an.i;INT.mv=SNUG.mv.i;INT.d=SNUG.d;if(SNUG.dash)INT.dash={x:SNUG.fx,y:SNUG.fy}}   // 찰딱 역할 기억 (끝날 때 서로 가리지 않게 헤어지기)
   return true;
 }
 function pairSpot(){const A=RT[INT.a],B=RT[INT.b];
@@ -1823,7 +1833,9 @@ function pairSpot(){const A=RT[INT.a],B=RT[INT.b];
 function stepInteraction(now){
   const a=RT[INT.a],b=RT[INT.b];
   if(INT.phase==='go'){
-    if(a.state==='arrived'&&b.state==='arrived'){
+    if(INT.dash){const mv=RT[INT.mv];   // 찰딱: 대기 자리에 닿으면 남은 거리를 순식간에 붙어요 (겹치는 동안이 눈에 띄지 않게)
+      if(mv.state==='arrived'){walkTo(mv,INT.dash.x,INT.dash.y,{state:'goto',speed:pxScale*(mv.cv.ball?30:60)});mv.dir=INT.d;mv.lockDir=true;drawSprite(mv);INT.dash=null}}
+    if(!INT.dash&&a.state==='arrived'&&b.state==='arrived'){
       INT.phase='act';a.lockDir=b.lockDir=false;a.zBoost=b.zBoost=false;
       [a,b].forEach(r=>{r.dir=r.goal.dir;r.state='inter';r.pose='lie'});
       if(INT.type==='nose'&&INT.grr){                 // 싫어!: 코 킁킁 하다가 신경질
@@ -3229,7 +3241,7 @@ async function loadAccountGame(rec){
 }
 /* ---------- 케이지(주인+쥐 세트) 전환 · 추가 ---------- */
 function resetRuntime(){
-  RT.forEach(r=>r.el.remove());RT.length=0;INT=null;
+  RT.forEach(r=>{r.el.remove();r.sw.remove()});RT.length=0;INT=null;
   $('#modal').classList.add('hidden');closeDrawer();
   view='home';$$('.view').forEach(s=>s.classList.toggle('active',s.id==='v-home'));document.body.classList.remove('overlay-view');
   $('#away').dataset.built='';$('#away').classList.add('hidden');shopTab='item';
