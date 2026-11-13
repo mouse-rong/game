@@ -598,7 +598,7 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
-      '상점에 🎀 꾸미기 탭이 생겼어요. 악세사리 4종(각 호박씨 1개): 쥐리는 리본 · 빙글빙글 안경 · 사과용 사과 · 양아쮜.',
+      '상점에 🎀 꾸미기 탭이 생겼어요. 악세사리 4종(각 호박씨 1개): 쥐리는 리본 · 쥐글쥐글 안경 · 사과용 사과 · 양아쮜.',
       '꾸미기 아이템은 한 번 사면 케이지의 모든 쥐가 쓸 수 있어요. 나의 쥐에서 이름 옆 🎀 버튼을 누르면 미리보기를 보며 쥐마다 최대 2개까지 씌우고 벗길 수 있어요.',
       '씌운 악세사리는 걷기 · 서기 · 투닥 · 들기 · 데구르르 굴러가기까지 쥐와 함께 움직여요.',
       '가구를 적용하면 쥐가 호박씨를 물어올 확률이 칸마다 +2% 올라가요. 바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴를 모두 채우면 +10%!',
@@ -662,7 +662,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130701';
+const APP_VERSION='202611130711';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1014,8 +1014,8 @@ const TPL_BALL_K=setPx(TPL_BALL,[[21,11,'.'],[21,10,'p'],[21,17,'.'],[21,19,'p']
 /* 꾸미기 아이템 (악세사리) — 쥐마다 최대 2개 착용 · 한 번 사면 케이지의 모든 쥐가 쓸 수 있어요 */
 const ACCS=[
   {id:'ribbon',name:'쥐리는 리본',price:1,desc:'몸통과 꼬리 사이에 묶는 얇은 빨간 리본'},
-  {id:'glasses',name:'빙글빙글 안경',price:1,desc:'얼굴에 쓰는 은테 네모 안경 · 윗테 없는 납작한 U 모양 · 안경알은 반투명'},
-  {id:'apple',name:'사과용 사과',price:1,desc:'머리 위에 얹는 반짝반짝 빨간 사과 (이파리 1장)'},
+  {id:'glasses',name:'쥐글쥐글 안경',price:1,desc:'얼굴에 쓰는 얇은 검은테 네모 안경 · 윗테 없는 납작한 U 모양'},
+  {id:'apple',name:'사과용 사과',price:1,desc:'머리 위에 얹는 작고 반짝이는 빨간 사과 (이파리 1장)'},
   {id:'scar',name:'양아쮜',price:1,desc:'몸통에 새긴 삐딱하고 거친 십자 흉터'},
 ];
 const ACC_MAX=2;
@@ -1025,23 +1025,19 @@ const ACC_ART={
   scar:(()=>{const L='#EDA5A0',D='#C46F6A';   // 삐딱하고 거친 십자 흉터: 완만한 긴 획 + 가파른 짧은 획이 비스듬히 엇갈려요
     return[[-3,-1,L],[-2,-1,L],[-1,0,L],[0,0,D],[1,0,L],[2,1,L],[3,1,D],
            [1,-2,D],[0,-1,L],[0,1,L],[-1,2,L],[-1,3,D]]})(),
-  glasses:(()=>{const F='#C9CED6',Fd='#959CA8',L='rgba(205,235,255,.42)',W='rgba(255,255,255,.55)',o=[];   // 은테 네모 안경 · 윗테 없는 납작한 U
-    [[-2,-1],[-2,0],[2,-1],[2,0]].forEach(([x,y])=>o.push([x,y,F]));          // 옆테
-    [[-2,1],[-1,1],[0,1],[1,1],[2,1]].forEach(([x,y])=>o.push([x,y,Fd]));     // 아래테
-    for(let y=-1;y<=0;y++)for(let x=-1;x<=1;x++)o.push([x,y,L]);          // 반투명 네모 안경알
-    [[-1,-1],[1,0]].forEach(([x,y])=>o.push([x,y,W]));                      // 빙글빙글 반짝
-    o.push([-3,-1,F],[-4,-1,F]);                                          // 안경다리 (귀 쪽)
+  glasses:(()=>{const F='#5E626B',L='rgba(205,235,255,.26)';   // 쥐글쥐글 안경: 반 칸 두께의 짙은 회색 테 (검정에 가깝지만 검은 쥐에게도 보이게) · 윗테 없는 납작한 U
+    const o=[];for(let y=-1;y<=0;y++)for(let x=-1;x<=1;x++)o.push([x,y,L]);   // 옅은 안경알
+    o.push([-1,-1,F,'L'],[-1,0,F,'L'],[1,-1,F,'R'],[1,0,F,'R'],[-1,0,F,'B'],[0,0,F,'B'],[1,0,F,'B']);   // 옆테 · 아래테 (반 칸 선)
+    o.push([-2,-1,F,'T'],[-3,-1,F,'T']);                                       // 안경다리 (귀 쪽)
+    o.push([-1,-1,'rgba(255,255,255,.45)','g']);                              // 작은 반짝임 하나
     return o})(),
-  apple:(()=>{const M={A:'#E43C3C',a:'#B5262C',h:'#FF8C8C',W:'#FFFFFF',t:'#6B4A2B',L:'#7CC46A',l:'#4E8F45'},o=[];
-    const rows=["....Ll.",
-                "...tLL.",
-                ".AA.AA.",
-                "AWhAAAa",
-                "AhAAAAa",
-                "AAAAAaa",
-                ".AAAaa.",
-                "..aaa.."];
-    rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-3,j-rows.length+1,M[c]])}));
+  apple:(()=>{const M={A:'#E43C3C',a:'#B5262C',W:'#FFFFFF',t:'#6B4A2B',L:'#7CC46A'},o=[];   // 머리 위 작은 사과 (5×5)
+    const rows=["..tL.",
+                ".AAA.",
+                "AWAAa",
+                "AAAaa",
+                ".Aaa."];
+    rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-2,j-rows.length+1,M[c]])}));
     return o})(),
 };
 /* 꾸미기 기준점 (템플릿 좌표): T 꼬리 시작(리본) · S 몸통 옆(흉터) · A 머리 위(사과 바닥 가운데) — 눈(안경)은 'e'를 찾아 써요 */
@@ -1112,7 +1108,7 @@ function buildMouse(o={}){
     const at=k=>{for(let y=0;y<AG.length;y++){const x=AG[y].findIndex(v=>v.includes(k));if(x>=0)return[x,y]}return null};
     const GW=g[0].length;
     acc.forEach(id=>{const p=at({ribbon:'T',scar:'S',glasses:'E',apple:'A'}[id]);if(!p)return;
-      const px=ACC_ART[id].map(([dx,dy,c])=>[p[0]+dx,p[1]+dy,c]);
+      const px=ACC_ART[id].map(([dx,dy,c,sh])=>sh?[p[0]+dx,p[1]+dy,c,sh]:[p[0]+dx,p[1]+dy,c]);
       if(id==='apple'){            // 사과는 테두리를 둘러 또렷하게
         const has=new Set(px.map(([x,y])=>x+','+y)),edge=new Set();
         px.forEach(([x,y])=>[[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,b])=>{const X=x+a,Y=y+b,k=X+','+Y;
@@ -1138,7 +1134,12 @@ function drawMouse(cv,opts={}){
     ctx.fillStyle=c==='h'?C.b:(C[c]||c);ctx.fillRect(X*K,y*K,K,K)}
   if(hx>=0){ctx.fillStyle=C.e;   // 눈 칸 중앙 기준의 작은 ^ (가로 2칸 · 세로 1칸)
     [[0,-1],[1,-1],[-1,0],[2,0],[-1,1],[2,1]].forEach(([dx,dy])=>ctx.fillRect(hx*K+dx,hy*K+dy,1,1))}
-  (ov||[]).forEach(([x,y,c])=>{const X=opts.flip?w-1-x:x;ctx.fillStyle=C[c]||c;ctx.fillRect(X*K,y*K,K,K)});   // 꾸미기
+  (ov||[]).forEach(([x,y,c,sh])=>{const X=opts.flip?w-1-x:x;ctx.fillStyle=C[c]||c;   // 꾸미기 (sh: 반 칸짜리 얇은 선 L/R/T/B · 점 g)
+    if(sh&&opts.flip)sh={L:'R',R:'L'}[sh]||sh;
+    if(sh==='L')ctx.fillRect(X*K,y*K,1,K);else if(sh==='R')ctx.fillRect(X*K+K-1,y*K,1,K);
+    else if(sh==='T')ctx.fillRect(X*K,y*K,K,1);else if(sh==='B')ctx.fillRect(X*K,y*K+K-1,K,1);
+    else if(sh==='g')ctx.fillRect(X*K+(opts.flip?1:0),y*K,1,1);
+    else ctx.fillRect(X*K,y*K,K,K)});
   return cv;
 }
 const sizeCanvas=(cv,sc)=>{const k=cv.gw?K:1;cv.style.width=cv.width/k*sc+'px';cv.style.height=cv.height/k*sc+'px'};
