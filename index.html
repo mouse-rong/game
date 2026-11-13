@@ -637,6 +637,7 @@ const PATCH_NOTES=[
   {date:'2026-11-14',title:'멋찍이 모자',sections:[
     ['🆕 새 기능',[
       '상점 > 🎀 꾸미기에 파란 캡 모자 「멋찍이 모자」(호박씨 1개)가 생겼어요. 사과용 사과와 함께 쓰면 사과가 모자 위에 올라가요.',
+      '찍찍 살롱에서 다른 쥐와의 관계(좋아! / 싫어!)도 다시 정할 수 있어요. 첫째 · 둘째 어느 쪽에서 바꿔도 돼요.',
       '찰딱 붙을 때, 말하는 쥐가 친구 얼굴을 덮어 가리던 문제를 고쳤어요. 말풍선만 맨 위에 떠요.',
       '찰딱하러 오는 쥐는 친구 바로 뒤까지 와서 순식간에 찰딱 붙어요.',
       '멋찍이 모자를 쓴 쥐를 들어 올리면 모자가 머리 쪽으로 기울어져 귀를 덮고 눌러쓴 모양이 돼요.',
@@ -724,7 +725,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611131825';
+const APP_VERSION='202611131827';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -2800,6 +2801,8 @@ function openAdopt(){
 /* ---------- 찍찍 살롱: 쥐 정보 전체 변경 (이용권 1장) ---------- */
 function openSalon(){
   const m=S.mouse;let col=m.color;SU.slG=m.gender;SU.slP=m.personality;
+  const oi=S.mice.findIndex((_,k)=>k!==S.sel),other=oi>=0?S.mice[oi].mouse.name:null;   // 같은 케이지의 다른 쥐 (관계는 둘이 함께 써요)
+  SU.slR=relOf()==='dislike'?'싫어!':'좋아!';
   modal(`✂ 찍찍 살롱 · ${esc(m.name)}`,`<div class="preview pbox" style="height:130px;margin-bottom:10px"><canvas id="salonCv"></canvas></div>
     <div class="row2"><div><label class="f">이름 *</label><input class="input" id="salName" maxlength="10" value="${esc(m.name)}"></div>
       <div><label class="f">애칭</label><input class="input" id="salNick" maxlength="10" value="${esc(m.nick)}"></div></div>
@@ -2807,11 +2810,13 @@ function openSalon(){
     <div class="colorrow"><input type="color" id="salColor" value="${col.toLowerCase()}"><span class="muted" style="font-size:12px">직접 고르기</span></div>
     <label class="f">성별</label><div class="seg" id="salGender"></div>
     <label class="f">성격 <span class="muted">(속마음 · 찍찍 말풍선이 바뀌어요)</span></label><div class="seg" id="salPers"></div><div class="pdesc" id="salPersDesc"></div>
+    ${other?`<label class="f">${esc(other)}${jo(other,'과')}의 관계</label><div class="seg" id="salRel"></div><div class="pdesc" id="salRelDesc"></div>`:''}
     <p class="note" style="margin-top:10px">적용하면 이용권 1장이 사용돼요.</p>`,
     [{label:'나중에'},{label:'적용하기',cls:'pink',fn:()=>{
       const nm=$('#salName').value.trim();if(!nm){toast('이름을 입력해 주세요!');return false}
-      const persChanged=m.personality!==SU.slP;
+      const persChanged=m.personality!==SU.slP,newRel=SU.slR==='싫어!'?'dislike':'like',relChanged=!!other&&newRel!==relOf();
       Object.assign(S.mouse,{name:nm,nick:$('#salNick').value.trim(),color:col,gender:SU.slG,personality:SU.slP});
+      if(relChanged){S.rel=newRel;if(INT)endInteraction(true);nextInter=Date.now()+6000}   // 관계가 바뀌면 지금 하던 상호작용은 멈추고 새 관계로 다시
       invAdd('salon',-1);
       afterUse('happy','heart','salon');
       if(persChanged){   // 바뀐 성격의 말투로 바로 한마디 + 속마음
@@ -2819,6 +2824,7 @@ function openSalon(){
         setTimeout(()=>{squeak(bag('sq:'+S.mouse.personality,SQ_PERS[S.mouse.personality]||SQ_BASE));squeakSound('찍찍!')},500);
         toast(`변신 완료! 이제 ${S.mouse.personality} ${nm} ✨`);
       }else toast('변신 완료! 반짝반짝 ✨');
+      if(relChanged)setTimeout(()=>toast(newRel==='dislike'?`💢 이제 ${other}${jo(other,'과')} 서로 싫어! 해요`:`♥ 이제 ${other}${jo(other,'과')} 서로 좋아! 해요`),persChanged?1400:900);
     }}]);
   const draw=()=>sizeCanvas(drawMouse($('#salonCv'),{color:col,weight:S.stats.weight,face:'happy'}),6);
   renderSwatches($('#salSw'),col,c=>{col=c;$('#salColor').value=c.toLowerCase();draw()});
@@ -2826,6 +2832,8 @@ function openSalon(){
   segButtons($('#salGender'),MOUSE_GENDERS,'slG');
   const pd=()=>{const ex=MOUSE_T[SU.slP]?.pet?.[0];$('#salPersDesc').textContent=MOUSE_P[SU.slP]+(ex?` — 예) “${fill(ex)}”`:'')};
   segButtons($('#salPers'),Object.keys(MOUSE_P),'slP',pd);pd();
+  if(other){const rd=()=>$('#salRelDesc').textContent=SU.slR==='싫어!'?'코 킁킁 할 때 신경질을 내고, 마주 보고 일어서서 투닥거려요':'코 킁킁 인사를 하고, 찰딱 붙어서 같이 쉬어요';
+    segButtons($('#salRel'),['좋아!','싫어!'],'slR',rd);rd()}
   draw();
 }
 
