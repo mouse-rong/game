@@ -662,7 +662,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130712';
+const APP_VERSION='202611130716';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1027,10 +1027,10 @@ const ACC_ART={
            [1,-2,D],[0,-1,L],[0,1,L],[-1,2,L],[-1,3,D]]})(),
   glasses:(()=>{const F='#5E626B',L='rgba(205,235,255,.26)';   // 쥐글쥐글 안경: 반 칸 두께의 짙은 회색 테 (검정에 가깝지만 검은 쥐에게도 보이게) · 윗테 없는 납작한 U
     const o=[];for(let y=-1;y<=0;y++)for(let x=-1;x<=1;x++)o.push([x,y,L,'F']);   // 옅은 안경알
-    o.push([-1,-1,F,'L'],[-1,0,F,'L'],[1,-1,F,'R'],[1,0,F,'R'],[-1,0,F,'B'],[0,0,F,'B'],[1,0,F,'B']);   // 옆테 · 아래테 (반 칸 선)
+    o.push([-1,-1,F,'L'],[-1,0,F,'L'],[1,-1,F,'R'],[1,0,F,'R'],[-1,0,F,'B',2],[0,0,F,'B',2],[1,0,F,'B',2]);   // 아래테는 반 칸 더 아래 → 눈 위아래로 안경알이 한 줄씩   // 옆테 · 아래테 (반 칸 선)
     o.push([-2,-1,F,'T'],[-3,-1,F,'T']);                                       // 안경다리 (귀 쪽)
     o.push([-1,-1,'rgba(255,255,255,.45)','g']);                              // 작은 반짝임 하나
-    return o.map(q=>[...q,1])})(),                                              // 전체를 반 칸 아래로
+    return o.map(q=>q.length>4?q:[...q,1])})(),                                              // 전체를 반 칸 아래로
   apple:(()=>{const M={A:'#E43C3C',a:'#B5262C',W:'#FFFFFF',t:'#6B4A2B',L:'#7CC46A'},o=[];   // 머리 위 작은 사과 (5×5)
     const rows=["..tL.",
                 ".AAA.",
