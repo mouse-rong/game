@@ -721,7 +721,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611131803';
+const APP_VERSION='202611131804';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1107,15 +1107,14 @@ const ACC_ART={
     rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-7,j-rows.length+1,M[c]])}));
     return o})(),
   hatTilt:(()=>{const M={k:'#000000',D:'#232321',B:'#4462B8',b:'#3051AE',L:'#BCBCBC',W:'#D3D3D3',l:'#BBBBBB',G:'#969696',X:'#676661'},o=[];   // 들어 올렸을 때: 머리 쪽으로 기울여 눌러쓴 모자
-    const rows=[".kkk.....",   // 기준점(x=3, y=3)이 귀 자리 · 챙은 코 쪽(오른쪽 아래)으로
-                "kBBBk....",
-                "kBBBBk...",
-                "kDBBBBk..",
-                ".kbBBBLk.",
-                "..kbbLWWk",
-                "...kkGWlk",
-                ".....kXkk"];
-    rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-3,j-3,M[c]])}));
+    const rows=["..kkk....",   // 기준점(x=3, y=2)이 귀 자리 · 둥근 윗부분 + 코 쪽(오른쪽 아래)으로 짧게 내민 챙
+                ".kBBBk...",
+                "kBBBBBk..",
+                "kDBBBBLk.",
+                ".kbbBLWWk",
+                "..kkbGWlk",
+                "....kkXkk"];
+    rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-3,j-2,M[c]])}));
     return o})(),
 };
 /* 꾸미기 기준점 (템플릿 좌표): T 꼬리 시작(리본) · S 몸통 옆(흉터) · A 머리 위(사과 바닥 가운데) · H 모자 (없으면 눈 위 머리 윗선) — 눈(안경)은 'e'를 찾아 써요 */
@@ -1194,7 +1193,7 @@ function buildMouse(o={}){
         for(let y=0;y<=hy;y++)if(g[y]?.[x]==='k')g[y][x]='.';                      // 모자 밖으로 솟은 귀 끝
         for(let y=hy+2;y<ey;y++)if(g[y]?.[x]==='p'||g[y]?.[x]==='P')g[y][x]='b'}}
     acc.forEach(id=>{let p=id==='hat'?hatP:at({ribbon:'T',scar:'S',glasses:'E',apple:'A'}[id]);if(!p)return;
-      if(id==='apple'&&hatP)p=hatH?[hatP[0]-1,hatP[1]-4]:[hatP[0]-3,hatP[1]-4];
+      if(id==='apple'&&hatP)p=hatH?[hatP[0]-1,hatP[1]-3]:[hatP[0]-3,hatP[1]-4];
       const px=ACC_ART[id==='hat'&&hatH?'hatTilt':id].map(([dx,dy,...rest])=>[p[0]+dx,p[1]+dy,...rest]);
       if(id==='apple'){            // 사과는 테두리를 둘러 또렷하게
         const has=new Set(px.map(([x,y])=>x+','+y)),edge=new Set();
