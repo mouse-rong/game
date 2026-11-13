@@ -343,6 +343,7 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
 #modal{position:fixed;inset:0;background:rgba(66,47,18,.35);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
 .modal-box{width:min(420px,100%);max-height:90vh;overflow:auto;padding:16px 18px}
 .modal-box h2{margin-bottom:10px}
+.invite-help{margin:4px 2px 0;padding-left:16px;font-size:12px;opacity:.75;line-height:1.35}
 .qty-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0 6px}
 .qty-row .qn{min-width:64px;text-align:center;font-size:30px;font-weight:700;line-height:1}
 .qty-row .pbtn{min-width:44px;font-size:18px}
@@ -430,7 +431,10 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
     <label class="f" for="aPw">비밀번호</label>
     <input class="input" id="aPw" name="password" type="password" maxlength="32" autocomplete="current-password" placeholder="4자 이상">
     <div id="aPw2Wrap" class="hidden"><label class="f" for="aPw2">비밀번호 확인</label>
-      <input class="input" id="aPw2" type="password" maxlength="32" autocomplete="new-password"></div>
+      <input class="input" id="aPw2" type="password" maxlength="32" autocomplete="new-password">
+      <label class="f" for="aInvite">0차 지인 코드</label>
+      <input class="input" id="aInvite" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="지인 코드를 입력해 주세요">
+      <ul class="invite-help"><li>@는 빼고 입력해 주세요.</li><li>코드를 모르면, 링크를 눌렀던 게시글 아래 타래를 확인해 주세요.</li></ul></div>
     <label class="chk hidden" id="aImportWrap"><input type="checkbox" id="aImport" checked>이 브라우저에서 키우던 쥐 데이터를 이 계정으로 옮기기</label>
     <div class="auth-msg" id="aMsg"></div>
     <button type="submit" class="pbtn pink auth-go" id="aGo">로그인</button>
@@ -635,6 +639,7 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '이제 계정을 만들 때 0차 지인 코드를 입력해야 해요.',
       '놀아 주면 무게가 1g, 모험에서 돌아오면 무게가 3g 빠져요. (최소 12g)',
       '보관함에서 같은 아이템이 2개 이상이면, 몇 개 쓸지 고른 뒤 한꺼번에 쓸 수 있어요.',
       '설정에 💌 문의 · 버그 제보 칸이 생겼어요. 궁금한 점이나 버그를 알려 주세요.',
@@ -710,7 +715,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611131250';
+const APP_VERSION='202611131302';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -3014,9 +3019,18 @@ function newerRec(remote,key){
   if(remote&&(!local||remote.at>=local.at))return remote;
   return local&&remoteOn()?{...local,fromLocal:true}:local;
 }
+/* 0차 지인 코드: 서버(Supabase)에선 jwi_invites 표로 확인하고, 서버가 없을 때만 여기 해시로 확인해요 */
+const normInvite=v=>String(v||'').trim().replace(/^@+/,'').trim().toLowerCase();
+const INVITE_H=['8463ace386b526dcb551794625b1de1606864599e9e96d76d80fce3f4a8eb6e2'];
+async function inviteOk(inv){
+  if(!inv||!crypto?.subtle)return false;
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('jwi-invite:'+inv));
+  return INVITE_H.includes([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''));
+}
 const Store={
-  async signup(key,id,h){   // → true(생성) | false(이미 있음)
-    if(BACKEND==='supa'){const ok=await supaRpc('jwi_signup',{p_key:key,p_id:id,p_h:h});if(ok===true)lsDel(LOCAL_SAVE+key);return ok===true}
+  async signup(key,id,h,inv){   // → true(생성) | false(이미 있음) · 지인 코드가 틀리면 bad_invite 오류
+    if(BACKEND==='supa'){const ok=await supaRpc('jwi_signup',{p_key:key,p_id:id,p_h:h,p_invite:inv});if(ok===true)lsDel(LOCAL_SAVE+key);return ok===true}
+    if(!await inviteOk(inv)){const e=new Error('bad_invite');e.code='bad_invite';throw e}   // 서버가 없을 때(아티팩트 · 이 브라우저)
     const body={id,h,at:Date.now()};
     if(BACKEND==='local'){if(lsGet(LOCAL_ACC+key))return false;lsSet(LOCAL_ACC+key,body);lsDel(LOCAL_SAVE+key);return true}
     const ref=DB.doc('accounts/'+key);   // claude.ai: 짧은 lease 동안 비어 있을 때만 기록
@@ -3148,15 +3162,17 @@ async function submitAuth(){
   if(!/^[0-9A-Za-z가-힣_]{2,16}$/.test(id))return msg('아이디는 2~16자의 한글·영문·숫자·_ 로 지어 주세요');
   if(pw.length<4)return msg('비밀번호는 4자 이상으로 입력해 주세요');
   if(su&&pw!==$('#aPw2').value)return msg('비밀번호 확인이 일치하지 않아요');
+  const inv=normInvite($('#aInvite').value);
+  if(su&&!inv)return msg('0차 지인 코드를 입력해야 계정을 만들 수 있어요');
   authBusy(true,'잠시만요…');
   try{
     await dbReady;
     const key=idKey(id),h=await pwHash(id,pw);
     if(su){
-      if(!await Store.signup(key,id,h)){authBusy(false);return msg('이미 있는 아이디예요. 다른 아이디를 써 주세요')}
+      if(!await Store.signup(key,id,h,inv)){authBusy(false);return msg('이미 있는 아이디예요. 다른 아이디를 써 주세요')}
       ACC={key,id,h};lsSet(SESSION_KEY,{key,id,h});SL={cur:0,slots:[]};
       const imp=$('#aImport').checked&&!$('#aImportWrap').classList.contains('hidden')?prepState(legacySave()):null;
-      $('#aPw').value=$('#aPw2').value='';
+      $('#aPw').value=$('#aPw2').value=$('#aInvite').value='';
       if(imp){S=imp;lsSet(LEGACY_DONE,true);save();flushSave();enterGame();toast(`👤 ${id} 계정에 기존 쥐 데이터를 옮겼어요!`)}
       else{S=null;openSetup();toast(`👤 ${id} 계정이 만들어졌어요!`)}
     }else{
@@ -3165,7 +3181,9 @@ async function submitAuth(){
       ACC={key,id:r.id||id,h};lsSet(SESSION_KEY,{key,id:ACC.id,h});$('#aPw').value='';
       await loadAccountGame(r.rec);
     }
-  }catch(e){console.warn(e);authBusy(false);msg(e?.code==='quota_exceeded'?'저장 공간이 가득 차서 계정을 만들 수 없어요':e?.message==='invalid_input'||/invalid_input/.test(e?.message||'')?'아이디나 비밀번호 형식을 확인해 주세요':'저장소에 연결하지 못했어요. 잠시 후 다시 시도해 주세요')}
+  }catch(e){console.warn(e);authBusy(false);
+    if(e?.code==='bad_invite'||/bad_invite/.test(e?.message||''))return msg('0차 지인 코드가 맞지 않아요. 다시 확인해 주세요');
+    msg(e?.code==='quota_exceeded'?'저장 공간이 가득 차서 계정을 만들 수 없어요':e?.message==='invalid_input'||/invalid_input/.test(e?.message||'')?'아이디나 비밀번호 형식을 확인해 주세요':'저장소에 연결하지 못했어요. 잠시 후 다시 시도해 주세요')}
 }
 async function loadAccountGame(rec){
   SL=rec?{cur:rec.cur,slots:rec.slots.slice()}:{cur:0,slots:[]};

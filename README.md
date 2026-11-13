@@ -9,13 +9,14 @@
 | `index.html` | 게임 전체. 패치할 때는 이 파일만 바꿔서 푸시하면 돼요. |
 | `config.js` | Supabase 연결 설정(URL · 공개 키). 한 번 채워 두면 패치해도 그대로 유지돼요. |
 | `supabase/setup.sql` | Supabase에 실행하는 테이블 · 함수 설정(계정 · 저장 · 쿠폰). 여러 번 실행해도 괜찮아요. |
+| `supabase/invite.sql` | 0차 지인 코드(가입할 때 꼭 입력) 표와 가입 함수. `setup.sql` 다음에 실행해요. |
 | `supabase/coupons.sql` | 쿠폰 추가 · 확인 · 종료 · 삭제용 SQL 모음. |
 | `fonts/dongle-bold.woff2` | 보조 글꼴(동글 Bold, 한글 11,172자). 기본 글꼴 주아에 없는 '쮝' 같은 글자만 이걸로 보여요. 라이선스는 `fonts/OFL-Dongle.txt`(SIL OFL 1.1). |
 
 ## Supabase 연결 (처음 한 번)
 
 1. [supabase.com](https://supabase.com)에서 프로젝트를 만들어요.
-2. 대시보드 **SQL Editor**에 `supabase/setup.sql` 내용을 붙여 넣고 **Run** 해요. 여러 번 실행해도 괜찮아요.
+2. 대시보드 **SQL Editor**에 `supabase/setup.sql` 내용을 붙여 넣고 **Run** 해요. 여러 번 실행해도 괜찮아요. 이어서 `supabase/invite.sql`도 같은 방법으로 실행해요(가입 함수와 0차 지인 코드).
 3. **Project Settings → API Keys**(또는 Data API)에서 아래 두 값을 복사해 `config.js`에 넣어요.
    - Project URL → `supabaseUrl`
    - anon / publishable 키 → `supabaseAnonKey`

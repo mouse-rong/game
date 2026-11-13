@@ -5,7 +5,7 @@
 --   jwi_accounts : 계정 (아이디 + 비밀번호 해시를 한 번 더 bcrypt로 보관)
 --   jwi_saves    : 계정별 진행상황 (케이지 최대 3개를 JSON 하나로)
 -- 두 테이블은 브라우저에서 직접 읽고 쓸 수 없고(RLS + 권한 회수),
--- 아래 함수 3개(가입 · 로그인 · 저장)로만 접근해요. 함수가 비밀번호를 확인한 뒤에만 읽고 써요.
+-- 함수(가입 · 로그인 · 저장)로만 접근해요. 함수가 비밀번호를 확인한 뒤에만 읽고 써요.
 
 create extension if not exists pgcrypto with schema extensions;
 
@@ -26,26 +26,8 @@ alter table public.jwi_accounts enable row level security;
 alter table public.jwi_saves    enable row level security;
 revoke all on public.jwi_accounts, public.jwi_saves from anon, authenticated;
 
--- 가입: 이미 있는 아이디면 false
-create or replace function public.jwi_signup(p_key text, p_id text, p_h text)
-returns boolean
-language plpgsql
-security definer
-set search_path = public, extensions
-as $$
-begin
-  if p_key !~ '^u[0-9a-f]{2,128}$'
-     or char_length(p_id) not between 2 and 16
-     or char_length(p_h) not between 16 and 128 then
-    raise exception 'invalid_input';
-  end if;
-  insert into jwi_accounts(key, display_id, pw)
-  values (p_key, p_id, crypt(p_h, gen_salt('bf')));
-  return true;
-exception when unique_violation then
-  return false;
-end;
-$$;
+-- 가입 함수(jwi_signup)는 0차 지인 코드 확인이 들어간 supabase/invite.sql 에 있어요.
+-- 이 파일을 실행한 다음 invite.sql 도 꼭 실행해 주세요.
 
 -- 로그인: 맞으면 { id, save }, 틀리거나 없으면 null
 create or replace function public.jwi_login(p_key text, p_h text)
@@ -91,10 +73,8 @@ begin
 end;
 $$;
 
-revoke all on function public.jwi_signup(text, text, text) from public;
 revoke all on function public.jwi_login(text, text)        from public;
 revoke all on function public.jwi_save(text, text, jsonb)  from public;
-grant execute on function public.jwi_signup(text, text, text) to anon, authenticated;
 grant execute on function public.jwi_login(text, text)        to anon, authenticated;
 grant execute on function public.jwi_save(text, text, jsonb)  to anon, authenticated;
 

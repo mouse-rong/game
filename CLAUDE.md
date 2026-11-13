@@ -28,3 +28,4 @@
 - `config.js`에는 Supabase 공개(publishable) 키만 넣는다. service_role/secret 키는 절대 넣지 않는다.
 - 저장 구조를 바꾸면 `prepState`에 기본값을 넣어 기존 사용자 데이터가 깨지지 않게 한다.
 - 쿠폰 코드는 게임 코드에 넣지 않는다(Supabase `jwi_coupons` 표에서 관리, `supabase/coupons.sql` 참고).
+- 0차 지인 코드도 게임 코드에 평문으로 넣지 않는다. 서버는 Supabase `jwi_invites` 표로 확인하고(`supabase/invite.sql`), 아티팩트처럼 서버가 없을 때만 `index.html`의 `INVITE_H`(`'jwi-invite:'+코드`의 SHA-256)로 확인한다. 코드를 바꾸면 둘 다 바꾼다.
