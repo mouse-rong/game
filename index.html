@@ -504,11 +504,11 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
       <div class="vbody">
         <div class="shop-tabs" id="shopTabs"><button class="pbtn on" data-stab="item">🧀 아이템</button><button class="pbtn" data-stab="furn">🛋 가구</button></div>
         <div id="shopItem">
-          <div class="capbar pbox"><img class="px ico lg" data-icon="seed" alt=""><span>보유 호박씨 <b style="font-weight:400;font-size:18px" id="seedShop">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto">행동 시 5% 확률 / 모험 · 일일 퀘스트에서 획득</span></div>
+          <div class="capbar pbox"><img class="px ico lg" data-icon="seed" alt=""><span>보유 호박씨 <b style="font-weight:400;font-size:18px" id="seedShop">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto">행동 시 <span id="seedRate">5%</span> 확률 / 모험 · 일일 퀘스트에서 획득</span></div>
           <div class="grid" id="shopList"></div>
         </div>
         <div id="shopFurn" class="hidden">
-          <div class="capbar pbox"><img class="px ico lg" data-icon="apple" alt=""><span>사과 조각 <b style="font-weight:400;font-size:18px" id="appleShop">0</b>개</span><img class="px ico lg" data-icon="seed" alt="" style="margin-left:6px"><span>호박씨 <b style="font-weight:400;font-size:18px" id="seedFurn">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto">구매하면 바로 적용돼요</span></div>
+          <div class="capbar pbox"><img class="px ico lg" data-icon="apple" alt=""><span>사과 조각 <b style="font-weight:400;font-size:18px" id="appleShop">0</b>개</span><img class="px ico lg" data-icon="seed" alt="" style="margin-left:6px"><span>호박씨 <b style="font-weight:400;font-size:18px" id="seedFurn">0</b>개</span><span class="muted" style="font-size:12px;margin-left:auto" id="furnBonus">구매하면 바로 적용돼요</span></div>
           <div class="shop-tabs fcat-tabs" id="furnTabs"></div>
           <div id="furnList"></div>
         </div>
@@ -580,6 +580,7 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '가구를 적용하면 쥐가 호박씨를 물어올 확률이 칸마다 +2% 올라가요. 바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴를 모두 채우면 +10%!',
       '속마음 읽기를 다 쓴 뒤 읽기 버튼(🧪)을 누르면 보관함에 가지 않고 바로 쥑닥쥑닥 물약을 쓸 수 있어요. 물약이 없으면 상점으로 안내해요.',
       '상점 가구에 지붕 탭이 생겼어요. 지붕은 케이지 맨 위에 걸리는 배경이라 쥐를 가리지 않아요.',
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
@@ -634,7 +635,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130113';
+const APP_VERSION='202611130119';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1209,6 +1210,7 @@ function renderAll(){
   const oc=`<b>${esc(o.name)}</b> 주인님<br><span class="muted">${esc(o.personality)}${o.mbti?' · '+esc(o.mbti):''}${o.age?' · '+o.age+'세':''} · ${esc(o.gender)}</span>`;
   $('#ownerCard').innerHTML=oc;const ocm=$('#ownerCardM');if(ocm)ocm.innerHTML=oc;
   $('#seedSide').textContent=S.seeds;$('#seedTop').textContent=S.seeds;$('#seedShop').textContent=S.seeds;
+  {const b=decoCount();$('#seedRate').textContent=pct(seedChance())+(b?` (가구 +${b*2}%)`:'')}
   $('#appleSide').textContent=S.apples;$('#appleTop').textContent=S.apples;$('#appleShop').textContent=S.apples;
   renderQuestBtn();
   $$('[data-nav]').forEach(b=>b.classList.toggle('on',b.dataset.nav===view));
@@ -1779,11 +1781,16 @@ function act(kind){
   ownerTalk(kind);
   afterAction(kind,true);save();renderAll();
 }
+/* 호박씨 물어올 확률: 기본 5%(엉뚱함 10%) + 적용한 가구 1칸마다 +2% (바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴, 최대 +10%) */
+const DECO_SLOTS=['floor','wall','roof','curtain','wheel'];
+const decoCount=()=>{const on=S?.deco?.on||{};return DECO_SLOTS.filter(k=>on[k]&&FURN.some(f=>f.id===on[k]&&f.cat===k)).length};
+const seedChance=()=>(S.mouse.personality==='엉뚱함'?.1:.05)+decoCount()*.02;
+const pct=v=>Math.round(v*100)+'%';
 function afterAction(ctx,canDrop){
   const odd=S.mouse.personality==='엉뚱함';
   if(Math.random()<(odd?.45:.3))S.fav=pickDiff(FAVS,S.fav);
   mouseThought(ctx);
-  if(canDrop&&Math.random()<(odd?.1:.05)){S.seeds++;setTimeout(()=>{toast(`🌰 ${fill('{m이}')} 호박씨 1개를 물어왔어요!`);particles('seed',4)},700)}
+  if(canDrop&&Math.random()<seedChance()){S.seeds++;setTimeout(()=>{toast(`🌰 ${fill('{m이}')} 호박씨 1개를 물어왔어요!`);particles('seed',4)},700)}
 }
 /* 속마음 읽기 횟수를 다 썼을 때: 보관함에 가지 않고 바로 쥑닥쥑닥 물약 쓰기 */
 function openPotionModal(){
@@ -2281,6 +2288,7 @@ function renderFurn(){
   $('#furnTabs').innerHTML=FCAT.map(([cat,label,em])=>`<button class="pbtn ${cat===furnCat?'on':''}" data-fcat="${cat}">${em} ${label}</button>`).join('');
   $('#furnTabs').onclick=e=>{const b=e.target.closest('[data-fcat]');if(b&&b.dataset.fcat!==furnCat){furnCat=b.dataset.fcat;renderFurn()}};
   $('#seedFurn').textContent=S.seeds;
+  {const b=decoCount();$('#furnBonus').textContent=`적용한 가구 1칸마다 호박씨 확률 +2% · 지금 +${b*2}% (최대 +10%)`}
   $('#furnList').innerHTML=`<div class="grid">${FURN.filter(f=>f.cat===furnCat).map(furnCard).join('')}</div>`+
     (furnCat==='wheel'?'<p class="note" style="margin-top:10px">쳇바퀴 자리에는 하나만 놓을 수 있어요. 다른 걸 적용하면 바뀌어요.</p>':'');
   const L=$('#furnList');
