@@ -583,7 +583,7 @@ const PATCH_NOTES=[
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
       '가구를 적용하면 쥐가 호박씨를 물어올 확률이 칸마다 +2% 올라가요. 바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴를 모두 채우면 +10%!',
       '속마음 읽기를 다 쓴 뒤 읽기 버튼(🧪)을 누르면 보관함에 가지 않고 바로 쥑닥쥑닥 물약을 쓸 수 있어요. 물약이 없으면 상점으로 안내해요.',
-      '쥑닥쥑닥 물약을 써도 지금 속마음이 바뀌지 않아요. 궁금했던 속마음을 그대로 읽을 수 있어요.',
+      '쥑닥쥑닥 물약을 써도 지금 속마음이 바뀌지 않아요. 물약은 속마음 읽기 횟수를 1번 충전만 하고, 읽기는 원할 때 직접 눌러요. 최대 횟수(5)는 늘어나지 않고, 가득 찼을 때는 물약을 아껴 둬요.',
       '두 쥐가 찰딱 붙을 때, 겹친 채로 천천히 미끄러지며 한쪽이 가려지던 순간이 없어졌어요. 나란히 다가온 뒤 한 번에 착 붙어요.',
       '상점 가구에 지붕 탭이 생겼어요. 지붕은 케이지 맨 위에 걸리는 배경이라 쥐를 가리지 않아요.',
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
@@ -642,7 +642,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130229';
+const APP_VERSION='202611130233';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -652,7 +652,7 @@ const ITEMS={
   snack:{name:'간식',icon:'cheese',desc:'‘간식 주기’에 사용돼요',use:false},
   pea:{name:'완두콩',icon:'pea',desc:'호감도 +5',use:true},
   mounjiro:{name:'마운찌로',icon:'pen',desc:'무게 -2g',use:true},
-  potion:{name:'쥑닥쥑닥 물약',icon:'potion',desc:'오늘 속마음 읽기 +1회',use:true},
+  potion:{name:'쥑닥쥑닥 물약',icon:'potion',desc:'속마음 읽기 횟수 1회 충전',use:true},
   salon:{name:'찍찍 살롱 이용권',icon:'bow',desc:'이름·애칭·털 색·성별·성격 변경',use:true},
   doll:{name:'애착 쥐의 애착 쥐',icon:'doll',desc:'쥐 옆에 미니 애착 인형 영구 배치',use:true},
 };
@@ -665,7 +665,7 @@ const SHOP=[
   {id:'snackpack',name:'간식 꾸러미',price:1,icon:'cheese',desc:'보관함에 간식 5개 추가',give:['snack',5]},
   {id:'pea',name:'완두콩',price:1,icon:'pea',desc:'쥐에게 사용 시 호감도 +5',give:['pea',1]},
   {id:'mounjiro',name:'마운찌로',price:1,icon:'pen',desc:'쥐에게 사용 시 무게 -2g',give:['mounjiro',1]},
-  {id:'potion',name:'쥑닥쥑닥 물약',price:1,icon:'potion',desc:'당일 속마음 읽기 횟수 +1',give:['potion',1]},
+  {id:'potion',name:'쥑닥쥑닥 물약',price:1,icon:'potion',desc:'속마음 읽기 횟수 1회 충전',give:['potion',1]},
   {id:'salon',name:'찍찍 살롱',price:3,icon:'bow',desc:'쥐의 이름·애칭·털 색·성별·성격을 바꿀 수 있어요',give:['salon',1]},
   {id:'doll',name:'애착 쥐의 애착 쥐',price:10,icon:'doll',desc:'쥐 옆에 미니 애착 인형을 영구 배치',give:['doll',1]},
 ];
@@ -1282,7 +1282,7 @@ function renderAll(){
   if(S.adv){t.className='t';t.innerHTML='<span class="tx away-t">(모험 중이라 마음이 멀리 있어요)</span>';}
   else{const lab=`<span class="chip ctx">${multi?esc(m.name)+' · ':''}${CTX_LABEL[S.thoughtCtx]||'평소'}</span>`;
     t.className='t';t.innerHTML=S.thoughtOpen?`${lab}<span class="tx">“${esc(S.thought)}”</span>`:`${lab}<span class="tx secret">???</span>`}
-  $('#readBtn').innerHTML=`속마음 읽기 ${left}/${readsMax()}`+(left<=0&&!S.adv?' 🧪':'');
+  $('#readBtn').innerHTML=`속마음 읽기 ${left}/${READS_PER_DAY}`+(left<=0&&!S.adv?' 🧪':'');
   $('#readBtn').disabled=!!S.adv||(S.thoughtOpen&&left>0);   // 0번 남았으면 눌러서 바로 물약을 쓸 수 있어요
   // 좋아하는 것
   $('#fav').innerHTML=`요즘 좋아하는 것: <b style="font-weight:400">${esc(S.fav)}</b>`;
@@ -1883,11 +1883,11 @@ function afterAction(ctx,canDrop){
 }
 /* 속마음 읽기 횟수를 다 썼을 때: 보관함에 가지 않고 바로 쥑닥쥑닥 물약 쓰기 */
 function openPotionModal(){
-  const n=S.inv.potion||0,read=!S.thoughtOpen;
+  const n=S.inv.potion||0;
   const body=`<div class="reward-list"><div class="reward pbox"><img class="px ico lg" src="${iconURL('potion')}" alt="">쥑닥쥑닥 물약 <b style="font-weight:400">${n}개</b> 보유</div></div>
-    <p style="font-size:14px">오늘 속마음 읽기를 모두 썼어요.<br>${n>0?`물약을 쓰면 오늘 속마음 읽기가 1번 늘어나요.${read?' 쓰고 나서 바로 읽어 볼게요.':''}`:'물약이 없어요. 상점에서 호박씨 1개로 살 수 있어요.'}</p>`;
+    <p style="font-size:14px">오늘 속마음 읽기를 모두 썼어요.<br>${n>0?'물약을 쓰면 속마음 읽기 횟수가 1번 충전돼요.':'물약이 없어요. 상점에서 호박씨 1개로 살 수 있어요.'}</p>`;
   modal('🧪 쥑닥쥑닥 물약',body,n>0
-    ?[{label:'닫기'},{label:'물약 쓰기',cls:'pink',fn:()=>{useItem('potion');if(read&&readsLeft()>0)setTimeout(readThought,350)}}]
+    ?[{label:'닫기'},{label:'물약 쓰기',cls:'pink',fn:()=>{useItem('potion')}}]   // 횟수만 충전 · 읽기는 직접 눌러서
     :[{label:'닫기'},{label:'상점 가기',cls:'pink',fn:()=>setView('shop')}]);
 }
 function readThought(){
@@ -2444,12 +2444,13 @@ function renderInv(){
 function useItem(id){
   if(S.adv){toast('모험 중에는 사용할 수 없어요!');return}
   if(!(S.inv[id]>0))return;
+  if(id==='potion'&&readsLeft()>=READS_PER_DAY){toast(`속마음 읽기 횟수가 이미 가득 찼어요! (${READS_PER_DAY}/${READS_PER_DAY})`);return}
   if(id==='salon'){openSalon();return}
   if(id==='doll'){openDollSetup();return}
   invAdd(id,-1);
   if(id==='pea'){addStat('aff',5);toast(`완두콩 냠냠! 호감도 +5 (♥ ${Math.round(S.stats.aff)})`);afterUse('happy','heart','pea')}
   else if(id==='mounjiro'){const before=S.stats.weight;S.stats.weight=r1(Math.max(12,S.stats.weight-2));toast(`무게 ${r1(before)}g → ${S.stats.weight}g`);afterUse('jump','sparkle','mounjiro')}
-  else if(id==='potion'){rollDay();S.reads.bonus++;toast(`🧪 오늘 속마음 읽기 +1회! (${readsLeft()}회 남음)`);afterUse('happy','bubble',null)}   // 물약은 지금 속마음을 그대로 둬요
+  else if(id==='potion'){rollDay();S.reads.bonus++;toast(`🧪 속마음 읽기 1회 충전! (${readsLeft()}/${READS_PER_DAY})`);afterUse('happy','bubble',null)}   // 물약은 지금 속마음을 그대로 둬요
   ownerTalk('item');
 }
 function afterUse(a,fx,ctx){if(ctx)mouseThought(ctx);save();renderAll();
