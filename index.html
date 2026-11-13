@@ -583,6 +583,7 @@ const PATCH_NOTES=[
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
       '가구를 적용하면 쥐가 호박씨를 물어올 확률이 칸마다 +2% 올라가요. 바닥 · 벽지 · 지붕 · 커튼 · 쳇바퀴를 모두 채우면 +10%!',
       '속마음 읽기를 다 쓴 뒤 읽기 버튼(🧪)을 누르면 보관함에 가지 않고 바로 쥑닥쥑닥 물약을 쓸 수 있어요. 물약이 없으면 상점으로 안내해요.',
+      '쥑닥쥑닥 물약을 써도 지금 속마음이 바뀌지 않아요. 궁금했던 속마음을 그대로 읽을 수 있어요.',
       '상점 가구에 지붕 탭이 생겼어요. 지붕은 케이지 맨 위에 걸리는 배경이라 쥐를 가리지 않아요.',
       '쥐깍 지붕(호박씨 1개): 세로 골이 진 단색 금속 지붕, 색상을 고를 수 있어요.',
       '모던 지붕(호박씨 1개): 짙은 슬레이트에 하얀 테두리와 나무 처마를 단 깔끔한 지붕.',
@@ -640,7 +641,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130156';
+const APP_VERSION='202611130159';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -718,7 +719,7 @@ const MOUSE_P={
   '엉뚱함':'호박씨 물어올 확률 2배(10%) · 좋아하는 것이 자주 바뀜',
 };
 const CTX_LABEL={idle:'평소',pet:'쓰다듬은 뒤',feed:'밥 먹은 뒤',snack:'간식 먹은 뒤',bath:'목욕한 뒤',play:'놀고 난 뒤',adv:'모험 후',
-  pea:'완두콩 먹은 뒤',nose:'코인사 후',grr:'투닥거린 뒤',snug:'꼭 붙어 있다가',mounjiro:'마운찌로 후',potion:'물약 후',doll:'인형 받은 뒤',salon:'살롱 후'};
+  pea:'완두콩 먹은 뒤',nose:'코인사 후',grr:'투닥거린 뒤',snug:'꼭 붙어 있다가',mounjiro:'마운찌로 후',doll:'인형 받은 뒤',salon:'살롱 후'};
 
 /* ---------- 주인이 하는 말 (성격 × 상황) ---------- */
 const OWNER_SAY={
@@ -812,7 +813,6 @@ const MT_GEN={
   adv:['다리가 후들후들해...','역시 집이 최고야...','모험 이야기 들려주고 싶은데 찍찍밖에 못 해...','{o} 님 보고 싶었어요!','주머니 가득 보물 담아 왔어요!','다음엔 더 멀리 가 볼래!'],
   pea:['완두콩 동글동글 맛있어!','초록색은 건강한 맛이야.','콩 한 알에 호감도 한 스푼!'],
   mounjiro:['몸이 가벼워진 기분...!','날씬해졌나? 거울 보고 싶다.','쳇바퀴가 더 잘 돌 것 같아!'],
-  potion:['어쩐지 마음이 투명해지는 느낌...','방금 그거 무슨 맛이었지...?','내 속마음, 너무 들키는 거 아니야?'],
   doll:['나한테도 애착 친구가 생겼다!','{d아}, 앞으로 잘 지내자!','{d이랑} 같이 자면 무섭지 않겠다.'],
   nose:['{p이랑} 코 인사했어! 킁킁','{p}한테서 해바라기씨 냄새가 나.','코끝이 간질간질... {p}도 그랬을까?','오늘도 {p} 냄새 확인 완료!'],
   snug:['{p이랑} 붙어 있으니까 따뜻해...','{p} 옆이 제일 포근해.','이대로 낮잠 자고 싶다... {p}도 그렇지?','찰딱! {p는} 내 베개야.'],
@@ -2439,10 +2439,10 @@ function useItem(id){
   invAdd(id,-1);
   if(id==='pea'){addStat('aff',5);toast(`완두콩 냠냠! 호감도 +5 (♥ ${Math.round(S.stats.aff)})`);afterUse('happy','heart','pea')}
   else if(id==='mounjiro'){const before=S.stats.weight;S.stats.weight=r1(Math.max(12,S.stats.weight-2));toast(`무게 ${r1(before)}g → ${S.stats.weight}g`);afterUse('jump','sparkle','mounjiro')}
-  else if(id==='potion'){rollDay();S.reads.bonus++;toast(`🧪 오늘 속마음 읽기 +1회! (${readsLeft()}회 남음)`);afterUse('happy','bubble','potion')}
+  else if(id==='potion'){rollDay();S.reads.bonus++;toast(`🧪 오늘 속마음 읽기 +1회! (${readsLeft()}회 남음)`);afterUse('happy','bubble',null)}   // 물약은 지금 속마음을 그대로 둬요
   ownerTalk('item');
 }
-function afterUse(a,fx,ctx){mouseThought(ctx);save();renderAll();
+function afterUse(a,fx,ctx){if(ctx)mouseThought(ctx);save();renderAll();
   if(window.innerWidth<=860)setView('home');playAnim(a);particles(fx,5)}
 
 /* ---------- 애착 쥐의 애착 쥐: 배치 전 이름·색 설정 ---------- */
