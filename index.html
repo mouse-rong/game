@@ -633,6 +633,11 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
 const INK='#422F12';
 /* 패치노트 — 새 업데이트는 맨 위에 추가해요 (날짜: YYYY-MM-DD) */
 const PATCH_NOTES=[
+  {date:'2026-11-14',title:'멋찍이 모자',sections:[
+    ['🆕 새 기능',[
+      '상점 > 🎀 꾸미기에 파란 캡 모자 「멋찍이 모자」(호박씨 1개)가 생겼어요. 사과용 사과와 함께 쓰면 사과가 모자 위에 올라가요.',
+    ]],
+  ]},
   {date:'2026-11-13',title:'쥐를 들어서 옮겨요',sections:[
     ['🆕 새 기능',[
       '쥐를 누른 채로 끌면(또는 꾹 누르고 있으면) 쥐를 들어서 원하는 곳으로 옮길 수 있어요. 손을 놓으면 바닥으로 톡 내려와요.',
@@ -715,7 +720,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611131302';
+const APP_VERSION='202611131754';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -1070,6 +1075,7 @@ const ACCS=[
   {id:'glasses',name:'쥐글쥐글 안경',price:1,desc:'얼굴에 쓰는 얇은 검은테 네모 안경 · 윗테 없는 납작한 U 모양'},
   {id:'apple',name:'사과용 사과',price:1,desc:'머리 위에 얹는 작고 반짝이는 빨간 사과 (이파리 1장)'},
   {id:'scar',name:'양아쮜',price:1,desc:'몸통에 새긴 삐딱하고 거친 십자 흉터'},
+  {id:'hat',name:'멋찍이 모자',price:1,desc:'머리에 푹 눌러쓰는 파란 캡 모자 · 은빛 챙'},
 ];
 const ACC_MAX=2;
 /* 액세서리 도트: [dx,dy,색] — 기준점에서 얼마나 떨어진 칸인지 (머리가 오른쪽을 볼 때 기준, 좌우 반전은 쥐와 함께) */
@@ -1091,6 +1097,13 @@ const ACC_ART={
                 "AAAaa",
                 ".Aaa."];
     rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-2,j-rows.length+1,M[c]])}));
+    return o})(),
+  hat:(()=>{const M={k:'#000000',D:'#232321',B:'#4462B8',b:'#3051AE',L:'#BCBCBC',W:'#D3D3D3',l:'#BBBBBB',G:'#969696',g:'#AAAAAA',X:'#676661'},o=[];   // 멋찍이 모자 (파란 캡 + 은빛 챙)
+    const rows=["..kkkkk...",   // 기준점: 아래 줄 바로 밑이 머리 윗선, x=7 이 눈 칸
+                ".kBBBBBDkk",
+                ".DBBBLWWlk",
+                "kbbbGgXkkk"];
+    rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(c!=='.')o.push([i-7,j-rows.length+1,M[c]])}));
     return o})(),
 };
 /* 꾸미기 기준점 (템플릿 좌표): T 꼬리 시작(리본) · S 몸통 옆(흉터) · A 머리 위(사과 바닥 가운데) — 눈(안경)은 'e'를 찾아 써요 */
@@ -1160,7 +1173,15 @@ function buildMouse(o={}){
   if(acc.length){
     const at=k=>{for(let y=0;y<AG.length;y++){const x=AG[y].findIndex(v=>v.includes(k));if(x>=0)return[x,y]}return null};
     const GW=g[0].length;
-    acc.forEach(id=>{const p=at({ribbon:'T',scar:'S',glasses:'E',apple:'A'}[id]);if(!p)return;
+    // 모자: 눈 칸에서 위로 올라가 머리 윗선을 찾고, 그 바로 위에 얹어요 (사과는 모자 위로)
+    const headTop=()=>{const e=at('E');if(!e)return null;let y=e[1];while(y>0&&g[y-1][e[0]]!=='.')y--;return[e[0],y-1]};
+    const hatP=acc.includes('hat')?headTop():null;
+    if(hatP){const[hx,hy]=hatP,ey=at('E')[1];   // 모자 아래로 귀가 삐져나오지 않게: 머리 윗선은 이어 주고, 그 아래 분홍 귓속은 털색으로
+      for(let x=hx-7;x<=hx+4;x++){const t=g[hy+1]?.[x];if(x<=hx+2&&t&&t!=='.'||t==='p'||t==='P')g[hy+1][x]='k';
+        for(let y=0;y<=hy;y++)if(g[y]?.[x]==='k')g[y][x]='.';                      // 모자 밖으로 솟은 귀 끝
+        for(let y=hy+2;y<ey;y++)if(g[y]?.[x]==='p'||g[y]?.[x]==='P')g[y][x]='b'}}
+    acc.forEach(id=>{let p=id==='hat'?hatP:at({ribbon:'T',scar:'S',glasses:'E',apple:'A'}[id]);if(!p)return;
+      if(id==='apple'&&hatP)p=[hatP[0]-3,hatP[1]-4];
       const px=ACC_ART[id].map(([dx,dy,...rest])=>[p[0]+dx,p[1]+dy,...rest]);
       if(id==='apple'){            // 사과는 테두리를 둘러 또렷하게
         const has=new Set(px.map(([x,y])=>x+','+y)),edge=new Set();
@@ -2600,7 +2621,7 @@ function openDress(i){
   const body=owned.length
     ?`<div class="dress-stage pbox"><canvas id="dressCv"></canvas></div>
       <p class="note" style="margin:0 2px 8px" id="dressNote"></p><div class="dress-list" id="dressList">${list()}</div>`
-    :`<div class="dress-stage pbox"><canvas id="dressCv"></canvas></div><p style="font-size:14px">아직 꾸미기 아이템이 없어요.<br>상점 > 🎀 꾸미기에서 리본 · 안경 · 사과 · 흉터를 살 수 있어요.</p>`;
+    :`<div class="dress-stage pbox"><canvas id="dressCv"></canvas></div><p style="font-size:14px">아직 꾸미기 아이템이 없어요.<br>상점 > 🎀 꾸미기에서 리본 · 안경 · 사과 · 흉터 · 모자를 살 수 있어요.</p>`;
   modal(`🎀 ${esc(mm.mouse.name)} 꾸미기`,body,owned.length?[{label:'완료',cls:'pink'}]:[{label:'닫기'},{label:'상점 가기',cls:'pink',fn:()=>{shopTab='acc';setView('shop')}}]);
   const draw=()=>{sizeCanvas(drawMouse($('#dressCv'),{color:mm.mouse.color,weight:mm.stats.weight,face:'happy',acc:mm.acc}),5);
     const n=$('#dressNote');if(n)n.textContent=`착용 ${mm.acc.length} / ${ACC_MAX}개 · 최대 ${ACC_MAX}개까지 함께 쓸 수 있어요`};
