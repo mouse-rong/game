@@ -343,6 +343,9 @@ body.grabbing,body.grabbing *{cursor:grabbing!important}
 #modal{position:fixed;inset:0;background:rgba(66,47,18,.35);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
 .modal-box{width:min(420px,100%);max-height:90vh;overflow:auto;padding:16px 18px}
 .modal-box h2{margin-bottom:10px}
+.qty-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0 6px}
+.qty-row .qn{min-width:64px;text-align:center;font-size:30px;font-weight:700;line-height:1}
+.qty-row .pbtn{min-width:44px;font-size:18px}
 .modal-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:14px;flex-wrap:wrap}
 .reward-list{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .reward{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff}
@@ -632,6 +635,7 @@ const PATCH_NOTES=[
       '들려 있는 동안 쥐는 얌전히 흔들리거나, 발을 버둥거려요. 어느 쪽일지는 그때그때 달라요.',
       '들려 있을 때도 코와 수염이 있어서, 바닥에 있을 때처럼 코를 씰룩이며 킁킁거려요.',
       '짧게 톡 누르면 지금처럼 쓰다듬어요.',
+      '보관함에서 같은 아이템이 2개 이상이면, 몇 개 쓸지 고른 뒤 한꺼번에 쓸 수 있어요.',
       '설정에 💌 문의 · 버그 제보 칸이 생겼어요. 궁금한 점이나 버그를 알려 주세요.',
       '상점에 🎀 꾸미기 탭이 생겼어요. 악세사리 4종(각 호박씨 1개): 쥐리는 리본 · 쥐글쥐글 안경 · 사과용 사과 · 양아쮜.',
       '꾸미기 아이템은 한 번 사면 케이지의 모든 쥐가 쓸 수 있어요. 나의 쥐에서 이름 옆 🎀 버튼을 누르면 미리보기를 보며 쥐마다 최대 2개까지 씌우고 벗길 수 있어요.',
@@ -705,7 +709,7 @@ const PATCH_NOTES=[
 ];
 const PATCH_SEEN_KEY='jwi-patch-seen';
 /* 배포 버전: 배포할 때마다 version.json과 같은 값으로 올려요. 다르면 '새 버전' 안내를 띄워요 */
-const APP_VERSION='202611130819';
+const APP_VERSION='202611130905';
 const SAVE_KEY='jwi-kiugi-proto-v1';
 const OWNER_GENDERS=['남성','여성','비공개'];
 const MOUSE_GENDERS=['수컷','암컷'];
@@ -2624,18 +2628,47 @@ function renderInv(){
     return`<div class="card pbox"><div class="top">${ico(it.icon,'xl')}<div><div class="nm">${it.name} <span class="chip">×${S.inv[k]}</span></div><div class="ds">${it.desc}</div></div></div>
       <div class="bottom"><span></span>${it.use?`<button class="pbtn mint" data-use="${k}" ${S.adv?'disabled':''}>사용</button>`:`<button class="pbtn" data-nav="home">간식 주러 가기</button>`}</div></div>`}).join('')
     :`<div class="empty pbox">보관함이 비어 있어요.<br>상점이나 모험에서 아이템을 모아 보세요!</div>`;
-  $('#invList').onclick=e=>{const b=e.target.closest('[data-use]');if(b)useItem(b.dataset.use)};
+  $('#invList').onclick=e=>{const b=e.target.closest('[data-use]');if(b)pickUseQty(b.dataset.use)};
 }
-function useItem(id){
+/* 여러 개 한꺼번에 쓸 수 있는 아이템: 지금 쓸 수 있는 최대 개수 */
+const QTY_ITEMS={
+  pea:{max:()=>S.inv.pea||0,fx:n=>`호감도 +${5*n}`},
+  mounjiro:{max:()=>Math.min(S.inv.mounjiro||0,Math.ceil(Math.max(0,r1(S.stats.weight)-12)/2)),
+    fx:n=>`무게 ${r1(S.stats.weight)}g → ${r1(Math.max(12,S.stats.weight-2*n))}g`},
+  potion:{max:()=>Math.min(S.inv.potion||0,Math.max(0,READS_PER_DAY-readsLeft())),
+    fx:n=>`속마음 읽기 ${readsLeft()} → ${readsLeft()+n} / ${READS_PER_DAY}`},
+};
+/* 보관함 [사용]: 2개 이상이면 몇 개 쓸지 먼저 물어봐요 */
+function pickUseQty(id){
+  const q=QTY_ITEMS[id];
+  if(S.adv||!q||!((S.inv[id]||0)>=2)){useItem(id);return}
+  const max=q.max();if(max<1){useItem(id);return}   // 쓸 수 없는 이유는 useItem이 알려줘요
+  const it=ITEMS[id],have=S.inv[id];let n=1;
+  modal(`${it.name} 사용`,`<div style="display:flex;gap:10px;align-items:center">${ico(it.icon,'xl')}<div><div style="font-weight:700">${it.name} <span class="chip">보유 ×${have}</span></div>
+      <div class="muted" style="font-size:12px">${it.desc}</div></div></div>
+    <div class="qty-row"><button class="pbtn" id="qMinus">−</button><span class="qn" id="qN">1</span><button class="pbtn" id="qPlus">+</button><button class="pbtn sm butter" id="qMax">최대</button></div>
+    <div class="muted" style="text-align:center;font-size:13px" id="qFx"></div>
+    ${max<have?`<div class="muted" style="text-align:center;font-size:12px;opacity:.75;margin-top:4px">지금은 최대 ${max}개까지 쓸 수 있어요.</div>`:''}`,
+    [{label:'취소'},{label:'사용',cls:'pink',fn:()=>{useItem(id,n)}}]);
+  const upd=()=>{$('#qN').textContent=n;$('#qFx').textContent=q.fx(n);$('#qMinus').disabled=n<=1;$('#qPlus').disabled=$('#qMax').disabled=n>=max};
+  $('#qMinus').onclick=()=>{n=Math.max(1,n-1);upd()};
+  $('#qPlus').onclick=()=>{n=Math.min(max,n+1);upd()};
+  $('#qMax').onclick=()=>{n=max;upd()};
+  upd();
+}
+function useItem(id,n=1){
   if(S.adv){toast('모험 중에는 사용할 수 없어요!');return}
   if(!(S.inv[id]>0))return;
   if(id==='potion'&&readsLeft()>=READS_PER_DAY){toast(`속마음 읽기 횟수가 이미 가득 찼어요! (${READS_PER_DAY}/${READS_PER_DAY})`);return}
   if(id==='salon'){openSalon();return}
   if(id==='doll'){openDollSetup();return}
-  invAdd(id,-1);
-  if(id==='pea'){addStat('aff',5);toast(`완두콩 냠냠! 호감도 +5 (♥ ${Math.round(S.stats.aff)})`);afterUse('happy','heart','pea')}
-  else if(id==='mounjiro'){const before=S.stats.weight;S.stats.weight=r1(Math.max(12,S.stats.weight-2));toast(`무게 ${r1(before)}g → ${S.stats.weight}g`);afterUse('jump','sparkle','mounjiro')}
-  else if(id==='potion'){rollDay();S.reads.bonus++;toast(`🧪 속마음 읽기 1회 충전! (${readsLeft()}/${READS_PER_DAY})`);afterUse('happy','bubble',null)}   // 물약은 지금 속마음을 그대로 둬요
+  const q=QTY_ITEMS[id];n=Math.max(1,Math.min(n|0,q?q.max():1));
+  if(id==='mounjiro'&&n<1)n=1;   // 12g에서도 한 개는 예전처럼 쓸 수 있게
+  invAdd(id,-n);
+  const x=n>1?` ×${n}`:'';
+  if(id==='pea'){addStat('aff',5*n);toast(`완두콩${x} 냠냠! 호감도 +${5*n} (♥ ${Math.round(S.stats.aff)})`);afterUse('happy','heart','pea')}
+  else if(id==='mounjiro'){const before=S.stats.weight;S.stats.weight=r1(Math.max(12,S.stats.weight-2*n));toast(`${ITEMS.mounjiro.name}${x}: 무게 ${r1(before)}g → ${S.stats.weight}g`);afterUse('jump','sparkle','mounjiro')}
+  else if(id==='potion'){rollDay();S.reads.bonus+=n;toast(`🧪 속마음 읽기 ${n}회 충전! (${readsLeft()}/${READS_PER_DAY})`);afterUse('happy','bubble',null)}   // 물약은 지금 속마음을 그대로 둬요
   ownerTalk('item');
 }
 function afterUse(a,fx,ctx){if(ctx)mouseThought(ctx);save();renderAll();
